@@ -1,0 +1,131 @@
+
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+datasource db {
+  provider = "postgresql"
+}
+generator client {
+  provider = "prisma-client-js"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String      @id @default(uuid())
+  username  String
+  email     String   @unique
+  password  String   
+
+  rating    Rating?
+  sessions  Session[]  
+
+  whiteGames Game[] @relation("WhitePlayer")
+  blackGames Game[] @relation("BlackPlayer")
+
+  createdAt DateTime @default(now())
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  ipAddress  String?
+  userAgent  String?
+  refreshTokenHash     String   @unique
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@index([userId]) 
+}
+
+model Rating {
+  id        String   @id @default(uuid())
+  playerId  String   @unique
+  rating    Int   @default(300)
+
+  player    User  @relation(fields: [playerId], references: [id])
+
+  @@index([playerId])
+}
+
+model Game {
+  id     String  @id @default(uuid())
+
+  white  String
+  black  String
+  turn   PlayerColor
+
+  result String?
+  status GameStatus @default(ACTIVE)
+
+  lastMoveAt DateTime?
+
+  moves  Move[]
+
+  whitePlayer User @relation("WhitePlayer", fields: [white], references: [id])
+  blackPlayer User @relation("BlackPlayer", fields: [black], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([white])
+  @@index([black])
+}
+
+model Move {
+  id     String  @id @default(uuid())
+  piece  PieceType
+  player PlayerColor
+  from   String  // position
+  to     String // position
+  moveNumber Int
+  captured  PieceType?
+  promtion PieceType?
+  castle  CastleType?
+  fenAfter String
+  san   String
+  uci   String
+  timeSpent Int
+  timestamp DateTime
+
+  isCheck  Boolean @default(false)
+  isCheckmate Boolean @default(false)
+  isStalemate Boolean @default(false)
+
+  gameId String
+  game  Game @relation(fields:[gameId],references:[id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([gameId, moveNumber])
+  @@index([gameId])
+  @@index([gameId, moveNumber])
+}
+
+enum PlayerColor {
+  WHITE 
+  BLACK
+}
+
+enum PieceType {
+  PAWN
+  KNIGHT
+  BISHOP
+  ROOK
+  QUEEN
+  KING
+}
+
+enum CastleType {
+  K  // king side
+  Q  // queen side
+}
+
+enum GameStatus {
+  ACTIVE
+  FINISHED
+  ABORTED
+}
