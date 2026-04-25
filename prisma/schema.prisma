@@ -30,6 +30,7 @@ model User {
 model Session {
   id        String   @id @default(uuid())
   userId    String
+  jti       String   @unique
   ipAddress  String?
   userAgent  String?
   refreshTokenHash     String   @unique

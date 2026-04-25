@@ -3,6 +3,8 @@ import cors from "cors";
 import dotenv from "dotenv";
 import morgan from "morgan";
 import cookieParser from "cookie-parser";
+import router from "./routes/index.js";
+import errorMiddleware from "./middlewares/error.middleware.js";
 dotenv.config();
 
 const app = express();
@@ -15,8 +17,8 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
 
-app.use("/", (_, res) => {
-  res.status(200).json({ message: "Hi There!" });
-});
+app.use("/", router);
+
+app.use(errorMiddleware);
 
 export default app;

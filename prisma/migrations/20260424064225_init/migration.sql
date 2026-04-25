@@ -25,6 +25,7 @@ CREATE TABLE "User" (
 CREATE TABLE "Session" (
     "id" TEXT NOT NULL,
     "userId" TEXT NOT NULL,
+    "jti" TEXT NOT NULL,
     "ipAddress" TEXT,
     "userAgent" TEXT,
     "refreshTokenHash" TEXT NOT NULL,
@@ -85,6 +86,9 @@ CREATE TABLE "Move" (
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "Session_jti_key" ON "Session"("jti");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Session_refreshTokenHash_key" ON "Session"("refreshTokenHash");

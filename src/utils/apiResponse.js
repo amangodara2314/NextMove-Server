@@ -6,7 +6,7 @@
  * @param {string} message - Response message
  */
 
-const successResponse = async (
+export const successResponse = async (
   res,
   statusCode = 200,
   data,
@@ -19,23 +19,23 @@ const successResponse = async (
   });
 };
 
-/**
- * Send error response
- * @param {object} res - Express Response object
- * @param {number} statusCode - Http status code
- * @param {object} errors - Error details
- * @param {string} message - Response message
- */
+// /**
+//  * Send error response
+//  * @param {object} res - Express Response object
+//  * @param {number} statusCode - Http status code
+//  * @param {object} errors - Error details
+//  * @param {string} message - Response message
+//  */
 
-const errorResponse = (
-  res,
-  statusCode = 500,
-  errors = null,
-  message = "Internal Server Error",
-) => {
-  return res.status(statusCode).json({
-    success: false,
-    message,
-    errors,
-  });
-};
+// export const errorResponse = (
+//   res,
+//   statusCode = 500,
+//   errors = null,
+//   message = "Internal Server Error",
+// ) => {
+//   return res.status(statusCode).json({
+//     success: false,
+//     message,
+//     errors,
+//   });
+// };
