@@ -1,4 +1,4 @@
-import app from "./app.js";
+import httpServer from "./app.js";
 import prisma from "./config/prisma.js";
 import validateEnv from "./utils/validateEnv.js";
 const PORT = process.env.PORT || 5000;
@@ -16,7 +16,9 @@ const testDbConnection = async () => {
 const startServer = async () => {
   validateEnv();
   await testDbConnection();
-  app.listen(PORT, () => console.log("Server is running on port " + PORT));
+  httpServer.listen(PORT, () =>
+    console.log("Server is running on port " + PORT),
+  );
 };
 
 process.on("uncaughtException", (err) => {

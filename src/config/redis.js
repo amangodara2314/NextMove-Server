@@ -8,7 +8,9 @@ const connectionString = process.env.REDIS_URL;
 //   },
 // };
 
-const redis = new Redis(connectionString);
+const redis = new Redis(connectionString, {
+  maxRetriesPerRequest: null, // required for BullMQ
+});
 
 redis.on("connect", () => {
   console.log("Connected to Redis");

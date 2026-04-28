@@ -18,7 +18,7 @@ model User {
   email     String   @unique
   password  String   
 
-  rating    Rating?
+  rating    Int  @default(1200)
   sessions  Session[]  
 
   whiteGames Game[] @relation("WhitePlayer")
@@ -42,22 +42,13 @@ model Session {
   @@index([userId]) 
 }
 
-model Rating {
-  id        String   @id @default(uuid())
-  playerId  String   @unique
-  rating    Int   @default(300)
-
-  player    User  @relation(fields: [playerId], references: [id])
-
-  @@index([playerId])
-}
 
 model Game {
   id     String  @id @default(uuid())
 
   white  String
   black  String
-  turn   PlayerColor
+  turn   PlayerColor @default(WHITE)
 
   result String?
   status GameStatus @default(ACTIVE)

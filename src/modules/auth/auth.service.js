@@ -1,3 +1,4 @@
+import prisma from "../../config/prisma.js";
 import {
   ACCESS_TOKEN_EXPIRES_IN,
   REFRESH_TOKEN_EXPIRES_IN,
@@ -54,7 +55,7 @@ const register = async (data) => {
 
   const passwordHash = await generateHash(password);
 
-  const user = await authRepository.createUser({
+  const user = await authRepository.createUser(tx, {
     email,
     password: passwordHash,
     username,
@@ -80,8 +81,11 @@ const refreshToken = async ({ refreshToken, ipAddress, userAgent }) => {
 
   try {
     decoded = verifyToken(refreshToken);
+    if (!decoded) {
+      throw new Error("Invalid token");
+    }
   } catch {
-    throw new AppError("Session expired", 401);
+    throw new AppError("Session expired. Please login again.", 401);
   }
 
   const { userId, jti } = decoded;

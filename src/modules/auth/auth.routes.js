@@ -12,7 +12,7 @@ authRouter.post(
 );
 
 authRouter.post("/login", validate(loginUserSchema), authController.login);
-authRouter.post("/refresh-token", authController.refreshToken);
+authRouter.get("/refresh-token", authController.refreshToken);
 
 authRouter.get("/me", authenticate, authController.getMe);
 

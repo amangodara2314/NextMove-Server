@@ -27,7 +27,7 @@ const login = async (req, res) => {
 
   res.cookie("refreshToken", refreshToken, rtkOptions);
 
-  successResponse(res, 201, { accessToken, user }, "Login successful");
+  successResponse(res, 200, { accessToken, user }, "Login successful");
 };
 
 const refreshToken = async (req, res) => {
@@ -47,7 +47,7 @@ const refreshToken = async (req, res) => {
 
   successResponse(
     res,
-    201,
+    200,
     { accessToken, user },
     "Token refreshed successfully",
   );
@@ -58,7 +58,9 @@ const getMe = async (req, res) => {
   if (!userId) {
     throw new AppError("userId not found", 404);
   }
-  const result = await authRepository.findUserById(userId);
+  const result = await authRepository.findUserById(userId, {
+    omit: { password: true },
+  });
 
   successResponse(res, 200, result, "User found");
 };
