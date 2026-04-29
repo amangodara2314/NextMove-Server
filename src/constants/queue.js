@@ -1,7 +1,9 @@
-import connection from "../config/redis";
+import Redis from "ioredis";
+import connection from "../config/redis.js";
+import redis from "../config/redis.js";
 
 const queueOptions = {
-  connection,
+  connection: redis.duplicate(), // Use a separate Redis connection for the queue
   defaultJobOptions: {
     attempts: 3,
     backoff: {

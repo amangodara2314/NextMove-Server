@@ -6,6 +6,9 @@ const requiredEnv = [
   "JWT_SECRET",
   "ACCESS_TOKEN_EXPIRES_IN",
   "REFRESH_TOKEN_EXPIRES_IN",
+  "REDIS_HOST",
+  "REDIS_PORT",
+  "REDIS_PASSWORD",
 ];
 
 const validateEnv = () => {

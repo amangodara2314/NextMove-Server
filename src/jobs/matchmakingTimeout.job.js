@@ -1,9 +1,11 @@
-import { io } from "../app";
-import redis from "../config/redis";
-import { REDIS_KEYS } from "../constants/keys";
+import { io } from "../app.js";
+import redis from "../config/redis.js";
+import { REDIS_KEYS } from "../constants/keys.js";
 
-const handleMatchmakingTimeout = async (job) => {
+const handleMatchmakingTimeoutJob = async (job) => {
   const { userId } = job.data;
+
+  console.log(`Handling matchmaking timeout for user ${userId}`);
 
   // check if user is still in the queue
   const queueKey = REDIS_KEYS.matchmakingQueue();
@@ -21,4 +23,4 @@ const handleMatchmakingTimeout = async (job) => {
   }
 };
 
-export default handleMatchmakingTimeout;
+export default handleMatchmakingTimeoutJob;

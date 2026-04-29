@@ -2,14 +2,15 @@ import Redis from "ioredis";
 
 const connectionString = process.env.REDIS_URL;
 
-// const options = {
-//   tls: {
-//     rejectUnauthorized: false,
-//   },
-// };
+const redis = new Redis({
+  host: process.env.REDIS_HOST,
+  port: process.env.REDIS_PORT,
+  password: process.env.REDIS_PASSWORD,
 
-const redis = new Redis(connectionString, {
-  maxRetriesPerRequest: null, // required for BullMQ
+  tls: {
+    rejectUnauthorized: false,
+  },
+  maxRetriesPerRequest: null,
 });
 
 redis.on("connect", () => {

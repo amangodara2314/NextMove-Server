@@ -10,3 +10,7 @@ export const REFRESH_TOKEN_EXPIRES_IN =
 export const SALT_ROUNDS = process.env.SALT_ROUNDS || 10;
 
 export const JWT_SECRET = process.env.JWT_SECRET;
+
+export const MATCHMAKING_TIMEOUT = process.env.MATCHMAKING_TIMEOUT || 60;
+
+export const RATING_RANGE = process.env.RATING_RANGE || 200;

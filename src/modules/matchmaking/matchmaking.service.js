@@ -5,6 +5,8 @@ import matchmakingRepository from "./matchmaking.repository.js";
 import gameRepository from "../game/game.repository.js";
 import authRepository from "../auth/auth.repository.js";
 import luaScript from "../../constants/luaScript.js";
+import matchmakingTimeoutQueue from "../../queues/matchmakingTimeout.queue.js";
+import { MATCHMAKING_TIMEOUT, RATING_RANGE } from "../../constants/env.js";
 
 const newGame = async (userId) => {
   if (!userId) {
@@ -33,8 +35,8 @@ const newGame = async (userId) => {
     userId,
     rating,
     Date.now(),
-    200,
-    60000,
+    RATING_RANGE,
+    MATCHMAKING_TIMEOUT * 1000,
   );
 
   // if opponent is not null, it means a match is found
@@ -65,6 +67,12 @@ const newGame = async (userId) => {
 
     return { matchFound: true, opponent: opponentDetails };
   }
+  // add the userId to matchmaking-timeout queue to notify user if no opponent is available
+  await matchmakingTimeoutQueue.add(
+    "matchmaking-timeout",
+    { userId },
+    { delay: MATCHMAKING_TIMEOUT * 1000 + 2 }, // added 2ms buffer time
+  );
 
   return { matchFound: false };
 };
