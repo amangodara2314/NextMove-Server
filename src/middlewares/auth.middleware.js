@@ -10,14 +10,14 @@ const authenticate = async (req, res, next) => {
 
   let decoded = null;
 
-  try {
-    decoded = verifyToken(token);
-    if (!decoded) throw new Error("Invalid token");
-  } catch (error) {
+  decoded = verifyToken(token);
+
+  if (!decoded) {
     throw new AppError("Invalid or expired token. Please login again", 401);
   }
 
   req.user = decoded;
+
   next();
 };
 
