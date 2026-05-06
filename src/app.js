@@ -7,8 +7,7 @@ import router from "./routes/index.js";
 import errorMiddleware from "./middlewares/error.middleware.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
-import handleSocketEvents from "./utils/io.js";
-import authenticateSocket from "./middlewares/socketAuth.middleware.js";
+import setupSocket from "./socket/index.js";
 dotenv.config();
 
 const app = express();
@@ -27,9 +26,7 @@ if (process.env.NODE_ENV !== "production") {
   app.use(morgan("dev"));
 }
 
-io.use(authenticateSocket);
-
-handleSocketEvents(io);
+setupSocket(io);
 
 app.use((req, res, next) => {
   // attack io to the req object to access it in routes

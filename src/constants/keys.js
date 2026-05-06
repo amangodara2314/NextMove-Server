@@ -8,6 +8,7 @@ const getRedisKey = (...args) => {
 const REDIS_KEYS = {
   matchmakingQueue: () => getRedisKey("matchmaking", "queue"),
   matchmakingJoinedAt: () => getRedisKey("matchmaking", "joinedAt"),
+  userSockets: (userId) => getRedisKey("user", userId, "sockets"),
 };
 
 export { REDIS_KEYS };
