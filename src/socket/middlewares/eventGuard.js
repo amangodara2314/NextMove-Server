@@ -9,9 +9,11 @@ const eventGuard = (socket) => {
 
     // check if the user.id matches the packet's data.userId
 
-    if (data?.userId && data.userId !== socket.user.id) {
+    if (data?.userId && data.userId !== user.userId) {
       next(new Error("User spoofing detected"));
     }
+
+    next();
   };
 };
 

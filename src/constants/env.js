@@ -14,3 +14,5 @@ export const JWT_SECRET = process.env.JWT_SECRET;
 export const MATCHMAKING_TIMEOUT = process.env.MATCHMAKING_TIMEOUT || 60;
 
 export const RATING_RANGE = process.env.RATING_RANGE || 200;
+
+export const SOCKET_RATE_LIMIT = process.env.SOCKET_RATE_LIMIT || 20;

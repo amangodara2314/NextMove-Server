@@ -9,6 +9,7 @@ const REDIS_KEYS = {
   matchmakingQueue: () => getRedisKey("matchmaking", "queue"),
   matchmakingJoinedAt: () => getRedisKey("matchmaking", "joinedAt"),
   userSockets: (userId) => getRedisKey("user", userId, "sockets"),
+  socketRateLimit: (userId) => getRedisKey("rate", "socket", userId),
 };
 
 export { REDIS_KEYS };
