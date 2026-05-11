@@ -6,7 +6,13 @@ import gameRepository from "../game/game.repository.js";
 import authRepository from "../auth/auth.repository.js";
 import luaScript from "../../constants/luaScript.js";
 import matchmakingTimeoutQueue from "../../queues/matchmakingTimeout.queue.js";
-import { MATCHMAKING_TIMEOUT, RATING_RANGE } from "../../constants/env.js";
+import {
+  MATCHMAKING_TIMEOUT,
+  RATING_RANGE,
+  RESERVATION_TTL,
+} from "../../constants/env.js";
+import { uuid } from "zod";
+import { io } from "../../app.js";
 
 const newGame = async (userId) => {
   if (!userId) {
@@ -41,31 +47,43 @@ const newGame = async (userId) => {
 
   // if opponent is not null, it means a match is found
   if (opponent) {
-    // get opponent details
-    const opponentDetails = await authRepository.findUserById(opponent, {
-      select: {
-        id: true,
-        username: true,
-        rating: true,
-      },
-    });
+    // create a reservation for both players with a short expiration time
+    const reservationId = uuid();
+    const key = REDIS_KEYS.reservation(reservationId);
+    const data = {
+      reservationId,
+      player1: userId,
+      player2: opponent.id,
+      player1Ack: "false",
+      player2Ack: "false",
+      createdAt: Date.now(),
+    };
+    const reservation = await matchmakingRepository.createReservation(
+      key,
+      data,
+      RESERVATION_TTL,
+    );
 
-    // create game with userId and opponent as opponentId
-    function pick0Or1() {
-      return Math.floor(Math.random() * 2);
+    const userSocket = await redis.get(REDIS_KEYS.userSocket(userId));
+    const opponentSocket = await redis.get(REDIS_KEYS.userSocket(opponent.id));
+
+    // Notify both players via WebSockets
+
+    if (userSocket) {
+      io.to(userSocket).emit("MATCH_FOUND", {
+        message: "Opponent found! Please confirm your availability.",
+        reservationId,
+      });
     }
 
-    // choose user's color randomly
-    const userColor = pick0Or1() === 1 ? "WHITE" : "BLACK";
+    if (opponentSocket) {
+      io.to(opponentSocket).emit("MATCH_FOUND", {
+        message: "Opponent found! Please confirm your availability.",
+        reservationId,
+      });
+    }
 
-    const data = {
-      turn: "WHITE",
-      white: userColor === "WHITE" ? userId : opponent,
-      black: userColor === "BLACK" ? userId : opponent,
-    };
-    const game = await gameRepository.createGame(data);
-
-    return { matchFound: true, opponent: opponentDetails };
+    return { matchFound: true, reservationId };
   }
   // add the userId to matchmaking-timeout queue to notify user if no opponent is available
   await matchmakingTimeoutQueue.add(

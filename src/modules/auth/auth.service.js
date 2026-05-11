@@ -30,7 +30,7 @@ const createSessionAndTokens = async (user, meta) => {
 
   const refreshTokenHash = await generateHash(refreshToken);
 
-  await authRepository.createSession({
+  const session = await authRepository.createSession({
     userId: user.id,
     jti,
     refreshTokenHash,
@@ -39,6 +39,8 @@ const createSessionAndTokens = async (user, meta) => {
     revoked: false,
     expiresAt: new Date(Date.now() + parseDuration(REFRESH_TOKEN_EXPIRES_IN)),
   });
+
+  await authRepository.revokeOtherSessions(user.id, session.id);
 
   delete user.password;
 

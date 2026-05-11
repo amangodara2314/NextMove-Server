@@ -1,4 +1,6 @@
 import prisma from "../../config/prisma.js";
+import redis from "../../config/redis.js";
+import { REDIS_KEYS } from "../../constants/keys.js";
 
 const createGame = async (data) => {
   return await prisma.game.create({
@@ -6,4 +8,12 @@ const createGame = async (data) => {
   });
 };
 
-export default { createGame };
+const createReservation = async (key, data, ttl) => {
+  await redis.hset(key, data.reservationId, JSON.stringify(data));
+
+  await redis.expire(key, ttl);
+
+  return data;
+};
+
+export default { createGame, createReservation };

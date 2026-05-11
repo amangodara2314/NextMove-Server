@@ -21,6 +21,20 @@ const updateSession = async (where, data) => {
   return await prisma.session.update({ where, data });
 };
 
+const revokeAllSessions = async (userId) => {
+  return await prisma.session.updateMany({
+    where: { userId, revoked: false },
+    data: { revoked: true },
+  });
+};
+
+const revokeOtherSessions = async (userId, keepSessionId) => {
+  return await prisma.session.updateMany({
+    where: { userId, id: { not: keepSessionId }, revoked: false },
+    data: { revoked: true },
+  });
+};
+
 const findUserById = async (userId, options) => {
   return await prisma.user.findUnique({ where: { id: userId }, ...options });
 };
@@ -31,5 +45,7 @@ export default {
   createSession,
   findSession,
   updateSession,
+  revokeAllSessions,
+  revokeOtherSessions,
   findUserById,
 };
