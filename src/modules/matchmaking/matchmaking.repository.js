@@ -11,8 +11,6 @@ const createGame = async (data) => {
 const createReservation = async (key, data, ttl) => {
   await redis.hset(key, data.reservationId, JSON.stringify(data));
 
-  await redis.expire(key, ttl);
-
   return data;
 };
 

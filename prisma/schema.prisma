@@ -75,7 +75,7 @@ model Move {
   to     String // position
   moveNumber Int
   captured  PieceType?
-  promtion PieceType?
+  promtion PieceType? // fix the spelling in next migration
   castle  CastleType?
   fenAfter String
   san   String

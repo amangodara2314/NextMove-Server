@@ -11,8 +11,9 @@ import {
   RATING_RANGE,
   RESERVATION_TTL,
 } from "../../constants/env.js";
-import { uuid } from "zod";
 import { io } from "../../app.js";
+import reservationTimeoutQueue from "../../queues/reservationTimeout.queue.js";
+import { v4 as uuidv4 } from "uuid";
 
 const newGame = async (userId) => {
   if (!userId) {
@@ -48,7 +49,7 @@ const newGame = async (userId) => {
   // if opponent is not null, it means a match is found
   if (opponent) {
     // create a reservation for both players with a short expiration time
-    const reservationId = uuid();
+    const reservationId = uuidv4();
     const key = REDIS_KEYS.reservation(reservationId);
     const data = {
       reservationId,
@@ -61,8 +62,11 @@ const newGame = async (userId) => {
     const reservation = await matchmakingRepository.createReservation(
       key,
       data,
-      RESERVATION_TTL,
     );
+    // add the reservation to queue to for cleanup
+    await reservationTimeoutQueue.add("reservation-timeout", reservation, {
+      delay: RESERVATION_TTL * 1000 + 1,
+    });
 
     const userSocket = await redis.get(REDIS_KEYS.userSocket(userId));
     const opponentSocket = await redis.get(REDIS_KEYS.userSocket(opponent.id));

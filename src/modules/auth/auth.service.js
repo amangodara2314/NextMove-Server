@@ -57,7 +57,7 @@ const register = async (data) => {
 
   const passwordHash = await generateHash(password);
 
-  const user = await authRepository.createUser(tx, {
+  const user = await authRepository.createUser(null, {
     email,
     password: passwordHash,
     username,
