@@ -21,11 +21,11 @@ const handleReservationTimeoutJob = async (job) => {
   }
 
   // if any player's ACK is set to true send them socket event to notify
-  if (reservation.player1Ack) {
+  if (reservation.player1Ack === "true") {
     await notifyPlayer(reservation.player1);
   }
 
-  if (reservation.player2Ack) {
+  if (reservation.player2Ack === "true") {
     await notifyPlayer(reservation.player2);
   }
 

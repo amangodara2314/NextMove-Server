@@ -4,7 +4,7 @@ import AppError from "../../utils/AppError.js";
 import matchmakingRepository from "./matchmaking.repository.js";
 import gameRepository from "../game/game.repository.js";
 import authRepository from "../auth/auth.repository.js";
-import luaScript from "../../constants/luaScript.js";
+import { matchmakingLuaScript } from "../../constants/luaScript.js";
 import matchmakingTimeoutQueue from "../../queues/matchmakingTimeout.queue.js";
 import {
   MATCHMAKING_TIMEOUT,
@@ -33,12 +33,14 @@ const newGame = async (userId) => {
   // check if the user is already in matchmaking queue
   const queueKey = REDIS_KEYS.matchmakingQueue();
   const joinedAtKey = REDIS_KEYS.matchmakingJoinedAt();
+  const userStateKey = REDIS_KEYS.userState(userId);
 
   const opponent = await redis.eval(
-    luaScript,
-    2,
+    matchmakingLuaScript,
+    3,
     queueKey,
     joinedAtKey,
+    userStateKey,
     userId,
     rating,
     Date.now(),
@@ -48,13 +50,16 @@ const newGame = async (userId) => {
 
   // if opponent is not null, it means a match is found
   if (opponent) {
+    // remove the opponent match timeout job if exists
+    await matchmakingTimeoutQueue.remove(`matchmaking-timeout-${opponent}`);
+
     // create a reservation for both players with a short expiration time
     const reservationId = uuidv4();
     const key = REDIS_KEYS.reservation(reservationId);
     const data = {
       reservationId,
       player1: userId,
-      player2: opponent.id,
+      player2: opponent,
       player1Ack: "false",
       player2Ack: "false",
       createdAt: Date.now(),
@@ -69,11 +74,13 @@ const newGame = async (userId) => {
     });
 
     const userSocket = await redis.get(REDIS_KEYS.userSocket(userId));
-    const opponentSocket = await redis.get(REDIS_KEYS.userSocket(opponent.id));
+    const opponentSocket = await redis.get(REDIS_KEYS.userSocket(opponent));
+    console.log("socket of user and opponent :", userSocket, opponentSocket);
 
     // Notify both players via WebSockets
 
     if (userSocket) {
+      console.log("emitting to user socket :", userSocket, opponent);
       io.to(userSocket).emit("MATCH_FOUND", {
         message: "Opponent found! Please confirm your availability.",
         reservationId,
@@ -81,6 +88,7 @@ const newGame = async (userId) => {
     }
 
     if (opponentSocket) {
+      console.log("emitting to opponent socket :", opponentSocket, userId);
       io.to(opponentSocket).emit("MATCH_FOUND", {
         message: "Opponent found! Please confirm your availability.",
         reservationId,
@@ -93,7 +101,10 @@ const newGame = async (userId) => {
   await matchmakingTimeoutQueue.add(
     "matchmaking-timeout",
     { userId },
-    { delay: MATCHMAKING_TIMEOUT * 1000 + 2 }, // added 2ms buffer time
+    {
+      delay: MATCHMAKING_TIMEOUT * 1000 + 2,
+      jobId: `matchmaking-timeout-${userId}`,
+    }, // added 2ms buffer time
   );
 
   return { matchFound: false };

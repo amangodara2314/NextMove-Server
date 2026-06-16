@@ -92,9 +92,13 @@ const refreshToken = async ({ refreshToken, ipAddress, userAgent }) => {
 
   const { userId, jti } = decoded;
 
+  console.log(jti);
+
   const session = await authRepository.findSession({
     where: { jti },
   });
+
+  console.log(session);
 
   // No session, possible reuse attack
   if (!session || session.revoked) {

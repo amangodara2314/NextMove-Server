@@ -10,6 +10,7 @@ const requiredEnv = [
   "REDIS_PORT",
   "REDIS_PASSWORD",
   "SOCKET_RATE_LIMIT",
+  "FRONTEND_URL",
 ];
 
 const validateEnv = () => {

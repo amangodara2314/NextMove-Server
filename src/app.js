@@ -8,17 +8,23 @@ import errorMiddleware from "./middlewares/error.middleware.js";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import setupSocket from "./socket/index.js";
+import { FRONTEND_URL } from "./constants/env.js";
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: FRONTEND_URL,
   },
 });
 
-app.use(cors());
+app.use(
+  cors({
+    origin: FRONTEND_URL,
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
@@ -34,7 +40,7 @@ app.use((req, res, next) => {
   next();
 });
 
-app.use("/", router);
+app.use("/api", router);
 
 app.use((req, res) => {
   return res.status(404).json({ message: "Route not found" });

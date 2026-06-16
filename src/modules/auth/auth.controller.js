@@ -25,6 +25,8 @@ const login = async (req, res) => {
     password,
   });
 
+  console.log("login user :", refreshToken, user);
+
   res.cookie("refreshToken", refreshToken, rtkOptions);
 
   successResponse(res, 200, { accessToken, user }, "Login successful");
@@ -37,11 +39,13 @@ const refreshToken = async (req, res) => {
     throw new AppError("Invalid token. Please login again", 401);
   }
 
-  const { accessToken, newRefreshToken, user } = await authService.refreshToken(
-    {
-      refreshToken,
-    },
-  );
+  const {
+    accessToken,
+    refreshToken: newRefreshToken,
+    user,
+  } = await authService.refreshToken({
+    refreshToken,
+  });
 
   res.cookie("refreshToken", newRefreshToken, rtkOptions);
 

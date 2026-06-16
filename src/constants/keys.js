@@ -11,6 +11,9 @@ const REDIS_KEYS = {
   userSocket: (userId) => getRedisKey("user", userId, "socket"),
   socketRateLimit: (userId) => getRedisKey("rate", "socket", userId),
   reservation: (reservationId) => getRedisKey("reservations", reservationId),
+  userState: (userId) => getRedisKey("user", userId, "state"),
+  game: (gameId) => getRedisKey("game", gameId),
+  gameMoves: (gameId) => getRedisKey("game", gameId, "moves"),
 };
 
 export { REDIS_KEYS };
