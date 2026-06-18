@@ -14,6 +14,7 @@ const REDIS_KEYS = {
   userState: (userId) => getRedisKey("user", userId, "state"),
   game: (gameId) => getRedisKey("game", gameId),
   gameMoves: (gameId) => getRedisKey("game", gameId, "moves"),
+  lock: (resource, resourceId) => getRedisKey("lock", resource, resourceId),
 };
 
 export { REDIS_KEYS };

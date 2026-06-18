@@ -19,4 +19,13 @@ const getGameFen = async (gameId) => {
   });
 };
 
-export default { createGame, findGameById, getGameFen };
+const countMoves = async (gameId) => {
+  return await prisma.move.count({
+    where: { gameId },
+  });
+};
+
+const createMove = async (data) => {
+  return await prisma.move.create({ data });
+};
+export default { createGame, findGameById, getGameFen, countMoves, createMove };

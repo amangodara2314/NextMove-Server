@@ -7,7 +7,7 @@ const matchmakingTimeoutWorker = new Worker(
   handleMatchmakingTimeoutJob,
   {
     concurrency: 5,
-    connection: redis.duplicate(),
+    connection: redis,
   },
 );
 

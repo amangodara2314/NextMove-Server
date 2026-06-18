@@ -2,6 +2,6 @@ import { Queue } from "bullmq";
 import connection from "../config/redis";
 import queueOptions from "../constants/queue";
 
-const moveQueue = new Queue("move-queue", queueOptions);
+const moveQueue = new Queue("move", queueOptions);
 
 export default moveQueue;

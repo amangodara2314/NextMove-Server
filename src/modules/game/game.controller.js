@@ -5,7 +5,7 @@ import AppError from "../../utils/AppError.js";
 import gameService from "./game.service.js";
 
 const getGame = async (req, res) => {
-  const { gameId } = req.query;
+  const { gameId } = req.params;
   const userId = req.user.userId;
   if (!gameId) {
     throw new AppError("Game is required");

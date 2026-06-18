@@ -4,12 +4,9 @@ const connectionString = process.env.REDIS_URL;
 
 const redis = new Redis({
   host: process.env.REDIS_HOST,
-  port: process.env.REDIS_PORT,
+  port: Number(process.env.REDIS_PORT),
+  username: "default",
   password: process.env.REDIS_PASSWORD,
-
-  tls: {
-    rejectUnauthorized: false,
-  },
   maxRetriesPerRequest: null,
 });
 

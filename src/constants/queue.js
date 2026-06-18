@@ -3,7 +3,10 @@ import connection from "../config/redis.js";
 import redis from "../config/redis.js";
 
 const queueOptions = {
-  connection: redis.duplicate(), // Use a separate Redis connection for the queue
+  connection: redis,
+  streams: {
+    maxLenEvents: 0, // STOPS the expensive XTRIM writes seen in your logs
+  },
   defaultJobOptions: {
     attempts: 3,
     backoff: {
@@ -11,7 +14,9 @@ const queueOptions = {
       delay: 2000,
     },
     removeOnComplete: true,
-    removeOnFail: false,
+    removeOnFail: {
+      count: 100,
+    },
   },
 };
 

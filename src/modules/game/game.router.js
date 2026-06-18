@@ -6,6 +6,6 @@ const gameRouter = Router();
 
 gameRouter.use(authenticate);
 
-gameRouter.get("/", gameController.getGame);
+gameRouter.get("/:gameId", gameController.getGame);
 
 export default gameRouter;

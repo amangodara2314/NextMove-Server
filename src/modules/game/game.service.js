@@ -44,9 +44,18 @@ const getGame = async (gameId, userId) => {
   const currentFen = await gameRepository.getGameFen(gameId);
   game.currentFen = currentFen ? currentFen.fenAfter : INITIAL_FEN;
 
+  // find the number of moves in the game
+  const moveCount = await gameRepository.countMoves(gameId);
+  game.version = moveCount;
+
   // if the game is active cache it
   if (game.status === GameStatus.ACTIVE) {
-    await redis.set(key, JSON.stringify(game));
+    await redis.set(
+      key,
+      JSON.stringify(game),
+      "EX",
+      60 * 60, // 1 hour
+    );
   }
 
   // set userColor property for frontend
