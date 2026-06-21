@@ -7,13 +7,13 @@ const handleSocketConnection = async (socket) => {
   await redis.set(key, socket.id);
 
   // log the connected socket id and user id
-  console.log("socket connected :", socket.id);
-  console.log("user :", socket.user);
-  console.log("user email :", socket?.user?.email);
+  console.log("=== socket connected ==== :", socket.id);
+  console.log("=== user === :", socket.user);
+  console.log("=== user email === :", socket?.user?.email);
 
   socket.on("disconnect", async () => {
     await redis.del(key);
-    console.log("socket disconnected :", socket.id);
+    console.log("===socket disconnected ==== :", socket.id);
   });
 };
 

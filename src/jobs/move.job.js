@@ -1,9 +1,14 @@
-import gameRepository from "../modules/game/game.repository";
+import gameRepository from "../modules/game/game.repository.js";
 
-const handleMove = async (job) => {
-  const { move } = job.data;
+const handleMoveJob = async (job) => {
+  const data = job.data;
 
-  await gameRepository.createMove(move);
+  const result = await gameRepository.createMove(data);
+
+  console.log(
+    `Move job ${job.id} processed: move ${data.san} for game ${data.gameId}`,
+    result,
+  );
 };
 
-export default handleMove;
+export default handleMoveJob;

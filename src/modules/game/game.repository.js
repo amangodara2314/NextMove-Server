@@ -28,4 +28,18 @@ const countMoves = async (gameId) => {
 const createMove = async (data) => {
   return await prisma.move.create({ data });
 };
-export default { createGame, findGameById, getGameFen, countMoves, createMove };
+
+const updateGame = async (gameId, data) => {
+  return await prisma.game.update({
+    where: { id: gameId },
+    data,
+  });
+};
+export default {
+  createGame,
+  findGameById,
+  getGameFen,
+  countMoves,
+  createMove,
+  updateGame,
+};

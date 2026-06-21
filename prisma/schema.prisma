@@ -80,7 +80,7 @@ model Move {
   fenAfter String
   san   String
   uci   String
-  timeSpent Int
+  timeSpent Int // in seconds
   timestamp DateTime
 
   isCheck  Boolean @default(false)

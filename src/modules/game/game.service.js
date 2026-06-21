@@ -4,6 +4,7 @@ import { REDIS_KEYS } from "../../constants/keys.js";
 import gameRepository from "./game.repository.js";
 import AppError from "../../utils/AppError.js";
 import { INITIAL_FEN } from "../../constants/game.js";
+import { io } from "../../app.js";
 
 const getGame = async (gameId, userId) => {
   const key = REDIS_KEYS.game(gameId);
@@ -13,7 +14,7 @@ const getGame = async (gameId, userId) => {
   if (cachedGame) {
     const game = JSON.parse(cachedGame);
     // set userColor property for frontend
-    game.userColor = game.white.id === userId ? "WHITE" : "BLACK";
+    game.userColor = game.white === userId ? "WHITE" : "BLACK";
     return { game };
   }
   // in case of cache miss query the database
@@ -59,7 +60,7 @@ const getGame = async (gameId, userId) => {
   }
 
   // set userColor property for frontend
-  game.userColor = game.white.id === userId ? "WHITE" : "BLACK";
+  game.userColor = game.white === userId ? "WHITE" : "BLACK";
   return { game };
 };
 

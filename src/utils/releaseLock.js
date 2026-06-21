@@ -1,3 +1,5 @@
+import redis from "../config/redis.js";
+
 const releaseLock = async (lockKey, lockValue) => {
   if (!lockKey || !lockValue) {
     return;

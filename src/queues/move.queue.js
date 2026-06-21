@@ -1,6 +1,6 @@
 import { Queue } from "bullmq";
-import connection from "../config/redis";
-import queueOptions from "../constants/queue";
+import connection from "../config/redis.js";
+import queueOptions from "../constants/queue.js";
 
 const moveQueue = new Queue("move", queueOptions);
 

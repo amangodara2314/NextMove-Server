@@ -65,8 +65,8 @@ const getMe = async (req, res) => {
   const result = await authRepository.findUserById(userId, {
     omit: { password: true },
   });
-
-  successResponse(res, 200, result, "User found");
+  const token = req?.token;
+  successResponse(res, 200, { user: result, accessToken: token }, "User found");
 };
 
 export default { register, login, refreshToken, getMe };
