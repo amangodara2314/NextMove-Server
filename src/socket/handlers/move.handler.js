@@ -8,9 +8,18 @@ import PIECE_MAP from "../../constants/pieces.js";
 import { GameStatus, PlayerColor } from "@prisma/client";
 import { prepareDateForDb } from "../../utils/prepareDateForDb.js";
 import gameRepository from "../../modules/game/game.repository.js";
+import createMove from "../validations/move.validation.js";
 
 const handleMove = async (socket) => {
   socket.on("MAKE_MOVE", async (data, callback) => {
+    // Validate data object using zod
+    const result = createMove.safeParse(data);
+    if (!result.success) {
+      callback?.({
+        success: false,
+        message: result?.error?.issues[0]?.message || "Validation error",
+      });
+    }
     const { gameId, from, to, promotion, version, timeSpent, timestamp } = data;
     if (!gameId) {
       throw new Error("Game ID is required.");

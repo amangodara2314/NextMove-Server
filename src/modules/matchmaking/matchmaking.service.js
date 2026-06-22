@@ -20,6 +20,13 @@ const newGame = async (userId) => {
     throw new AppError("userId not found", 404);
   }
 
+  // find if the user is already in a game
+  const existingGame = await gameRepository.findUserActiveGame(userId);
+
+  if (existingGame) {
+    return { matchFound: true, reservationId: null, gameId: existingGame.id };
+  }
+
   const user = await authRepository.findUserById(userId, {
     select: {
       id: true,

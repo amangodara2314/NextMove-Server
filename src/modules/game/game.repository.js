@@ -4,11 +4,15 @@ const createGame = async (data) => {
   return await prisma.game.create({ data });
 };
 
-const findGameById = async (gameId, { where, ...query }) => {
+const findGame = async (gameId, { where, ...query } = {}) => {
   return await prisma.game.findUnique({
     where: { id: gameId, ...where },
     ...query,
   });
+};
+
+const findGameById = async (gameId, query) => {
+  return await prisma.game.findUnique({ where: { id: gameId }, ...query });
 };
 
 const getGameFen = async (gameId) => {
@@ -35,11 +39,28 @@ const updateGame = async (gameId, data) => {
     data,
   });
 };
+
+const findUserActiveGame = async (userId) => {
+  return await prisma.game.findFirst({
+    where: {
+      OR: [{ white: userId }, { black: userId }],
+      status: "ACTIVE",
+    },
+  });
+};
+
+const findMoves = async (query) => {
+  return await prisma.move.findMany(query);
+};
+
 export default {
   createGame,
-  findGameById,
+  findGame,
   getGameFen,
   countMoves,
+  findUserActiveGame,
   createMove,
   updateGame,
+  findMoves,
+  findGameById,
 };

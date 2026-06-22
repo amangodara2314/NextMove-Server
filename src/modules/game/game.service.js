@@ -35,7 +35,7 @@ const getGame = async (gameId, userId) => {
       },
     },
   };
-  const game = await gameRepository.findGameById(gameId, query);
+  const game = await gameRepository.findGame(gameId, query);
 
   if (!game) {
     throw new AppError("Game not found");
@@ -64,4 +64,78 @@ const getGame = async (gameId, userId) => {
   return { game };
 };
 
-export default { getGame };
+const getMoves = async (gameId, cursor = null, take = 20) => {
+  const gameKey = REDIS_KEYS.game(gameId);
+  let game = await redis.get(gameKey);
+
+  console.log(
+    "Fetching moves for game:",
+    gameId,
+    "cursor:",
+    cursor,
+    "take:",
+    take,
+  );
+
+  // fallback to DB
+  if (game) {
+    game = JSON.parse(game);
+  } else {
+    game = await gameRepository.findGameById(gameId);
+  }
+
+  if (!game) {
+    throw new AppError("Game not found.", 404);
+  }
+
+  const movesKey = REDIS_KEYS.gameMoves(gameId);
+
+  let moves = [];
+
+  // ACTIVE game use Redis
+  if (game.status === "ACTIVE") {
+    const totalMoves = game.version;
+
+    let start;
+    let end;
+
+    if (!cursor) {
+      // latest moves
+      start = Math.max(0, totalMoves - take);
+      end = totalMoves - 1;
+    } else {
+      // older moves before cursor
+      start = Math.max(0, cursor - take - 1);
+      end = cursor - 2;
+    }
+
+    const cachedMoves = await redis.lrange(movesKey, start, end);
+
+    moves = cachedMoves.map((move) => JSON.parse(move));
+
+    const nextCursor = moves.length > 0 ? moves[0].moveNumber : null;
+
+    return {
+      moves,
+      nextCursor,
+      hasMore: start > 0,
+      source: "redis",
+    };
+  }
+
+  // FINISHED game use db
+  const dbMoves = await gameRepository.getMoves({
+    gameId,
+    cursor,
+    take,
+  });
+
+  return {
+    moves: dbMoves,
+    nextCursor:
+      dbMoves.length === take ? dbMoves[dbMoves.length - 1].moveNumber : null,
+    hasMore: dbMoves.length === take,
+    source: "db",
+  };
+};
+export default { getGame, getMoves };
