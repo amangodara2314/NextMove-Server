@@ -5,6 +5,9 @@ const handleGame = async (socket) => {
   socket.on("JOIN_GAME", async (data, callback) => {
     try {
       const { gameId } = data;
+      console.info(
+        `User ${socket.user.userId} is trying to join game ${gameId}`,
+      );
       // Validate gameId
       if (!gameId) {
         throw new Error("Game ID is required.");
@@ -21,10 +24,8 @@ const handleGame = async (socket) => {
 
       // check if the game is active
       if (game && game.status !== "ACTIVE") {
-        throw new Error("Game is not active.");
+        return;
       }
-
-      console.log(game);
 
       // check if the user is a player in the game
       const userId = socket.user.userId;

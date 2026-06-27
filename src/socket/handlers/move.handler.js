@@ -9,6 +9,7 @@ import { GameStatus, PlayerColor } from "@prisma/client";
 import { prepareDateForDb } from "../../utils/prepareDateForDb.js";
 import gameRepository from "../../modules/game/game.repository.js";
 import createMove from "../validations/move.validation.js";
+import { io } from "../../app.js";
 
 const handleMove = async (socket) => {
   socket.on("MAKE_MOVE", async (data, callback) => {
@@ -152,12 +153,27 @@ const handleMove = async (socket) => {
       console.log(
         `User ${socket.user.userId} made a move in game ${gameId}: ${move.san}`,
       );
-      socket
-        .to(gameId)
-        .emit("MOVE_MADE", { move, fen: game.fen, version: game.version });
-      callback?.({ success: true, move, fen: game.fen, version: game.version });
+      io.to(gameId).emit("MOVE_MADE", {
+        move,
+        fen: game.fen,
+        version: game.version,
+      });
+      const response = {
+        move,
+        fen: game.fen,
+        version: game.version,
+      };
+      if (
+        game.status === GameStatus.FINISHED ||
+        game.status === GameStatus.ABORTED
+      ) {
+        response.gameOver = true;
+        response.gameStatus = game.status;
+        response.gameResult = game.result;
+      }
+      callback?.({ success: true, ...response });
     } catch (error) {
-      console.log("error in move handler", error);
+      console.error("error in move handler", error);
       callback?.({
         success: false,
         message:

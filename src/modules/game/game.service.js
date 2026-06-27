@@ -68,15 +68,6 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
   const gameKey = REDIS_KEYS.game(gameId);
   let game = await redis.get(gameKey);
 
-  console.log(
-    "Fetching moves for game:",
-    gameId,
-    "cursor:",
-    cursor,
-    "take:",
-    take,
-  );
-
   // fallback to DB
   if (game) {
     game = JSON.parse(game);
@@ -93,20 +84,21 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
   let moves = [];
 
   // ACTIVE game use Redis
+  const parsedCursor = cursor ? parseInt(cursor, 10) : null;
   if (game.status === "ACTIVE") {
     const totalMoves = game.version;
 
     let start;
     let end;
 
-    if (!cursor) {
+    if (!parsedCursor) {
       // latest moves
       start = Math.max(0, totalMoves - take);
       end = totalMoves - 1;
     } else {
       // older moves before cursor
-      start = Math.max(0, cursor - take - 1);
-      end = cursor - 2;
+      start = Math.max(0, parsedCursor - take - 1);
+      end = parsedCursor - 2;
     }
 
     const cachedMoves = await redis.lrange(movesKey, start, end);
@@ -124,9 +116,20 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
   }
 
   // FINISHED game use db
-  const dbMoves = await gameRepository.getMoves({
-    gameId,
-    cursor,
+  const dbMoves = await gameRepository.findMoves({
+    where: { gameId },
+    ...(parsedCursor && {
+      cursor: {
+        gameId_moveNumber: {
+          gameId,
+          moveNumber: parsedCursor,
+        },
+      },
+      skip: 1,
+    }),
+    orderBy: {
+      moveNumber: "asc",
+    },
     take,
   });
 
