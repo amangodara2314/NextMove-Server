@@ -82,12 +82,12 @@ const newGame = async (userId) => {
 
     const userSocket = await redis.get(REDIS_KEYS.userSocket(userId));
     const opponentSocket = await redis.get(REDIS_KEYS.userSocket(opponent));
-    console.log("socket of user and opponent :", userSocket, opponentSocket);
+    console.info("socket of user and opponent :", userSocket, opponentSocket);
 
     // Notify both players via WebSockets
 
     if (userSocket) {
-      console.log("emitting to user socket :", userSocket, opponent);
+      console.info("emitting to user socket :", userSocket, opponent);
       io.to(userSocket).emit("MATCH_FOUND", {
         message: "Opponent found! Please confirm your availability.",
         reservationId,
@@ -95,7 +95,7 @@ const newGame = async (userId) => {
     }
 
     if (opponentSocket) {
-      console.log("emitting to opponent socket :", opponentSocket, userId);
+      console.info("emitting to opponent socket :", opponentSocket, userId);
       io.to(opponentSocket).emit("MATCH_FOUND", {
         message: "Opponent found! Please confirm your availability.",
         reservationId,

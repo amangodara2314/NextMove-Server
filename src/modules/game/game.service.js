@@ -116,7 +116,7 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
   }
 
   // FINISHED game use db
-  const dbMoves = await gameRepository.findMoves({
+  let dbMoves = await gameRepository.findMoves({
     where: { gameId },
     ...(parsedCursor && {
       cursor: {
@@ -128,15 +128,16 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
       skip: 1,
     }),
     orderBy: {
-      moveNumber: "asc",
+      moveNumber: "desc",
     },
     take,
   });
 
+  dbMoves = dbMoves.reverse();
+
   return {
     moves: dbMoves,
-    nextCursor:
-      dbMoves.length === take ? dbMoves[dbMoves.length - 1].moveNumber : null,
+    nextCursor: dbMoves.length > 0 ? dbMoves[0].moveNumber : null,
     hasMore: dbMoves.length === take,
     source: "db",
   };
