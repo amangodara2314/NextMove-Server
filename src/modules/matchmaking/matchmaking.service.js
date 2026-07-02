@@ -21,10 +21,12 @@ const newGame = async (userId) => {
   }
 
   // find if the user is already in a game
-  const existingGame = await gameRepository.findUserActiveGame(userId);
+  const userActiveGameKey = REDIS_KEYS.userActiveGame(userId);
 
-  if (existingGame) {
-    return { matchFound: true, reservationId: null, gameId: existingGame.id };
+  const activeGameId = await redis.get(userActiveGameKey, userId);
+
+  if (activeGameId) {
+    return { matchFound: true, reservationId: null, gameId: activeGameId };
   }
 
   const user = await authRepository.findUserById(userId, {
@@ -80,8 +82,11 @@ const newGame = async (userId) => {
       delay: RESERVATION_TTL * 1000 + 1,
     });
 
-    const userSocket = await redis.get(REDIS_KEYS.userSocket(userId));
-    const opponentSocket = await redis.get(REDIS_KEYS.userSocket(opponent));
+    const [userSocket, opponentSocket] = await Promise.all([
+      redis.get(REDIS_KEYS.userSocket(userId)),
+      redis.get(REDIS_KEYS.userSocket(opponent)),
+    ]);
+
     console.info("socket of user and opponent :", userSocket, opponentSocket);
 
     // Notify both players via WebSockets
