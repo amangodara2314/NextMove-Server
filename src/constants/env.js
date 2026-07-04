@@ -20,3 +20,5 @@ export const SOCKET_RATE_LIMIT = process.env.SOCKET_RATE_LIMIT || 20;
 export const RESERVATION_TTL = process.env.RESERVATION_TTL || 30; // in seconds
 
 export const FRONTEND_URL = process.env.FRONTEND_URL;
+
+export const RECONNECTION_TIMEOUT = process.env.RECONNECTION_TIMEOUT || 30; // in seconds

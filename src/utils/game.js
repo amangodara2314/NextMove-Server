@@ -4,7 +4,7 @@ import PIECE_MAP from "../constants/pieces.js";
 import gameRepository from "../modules/game/game.repository.js";
 import { prepareDateForDb } from "./prepareDateForDb.js";
 
-const endGame = async (game, status, dbResult, result) => {
+const endGame = async (game, status, dbResult) => {
   game.status = status;
   game.result = dbResult;
   const updateGame = await gameRepository.updateGame(game.id, {

@@ -1,6 +1,8 @@
 import { GameStatus } from "@prisma/client";
 import { REDIS_KEYS } from "../constants/keys.js";
 import redis from "../config/redis.js";
+import { endGame } from "../utils/game.js";
+import { io } from "../app.js";
 
 const reconnectionTimeoutJob = async (job) => {
   console.log(
@@ -40,6 +42,19 @@ const reconnectionTimeoutJob = async (job) => {
   console.log(
     `User ${userId} has not reconnected within the timeout. Handling disconnection for game ${gameId}.`,
   );
+
+  const opponentColor = game.white === userId ? "Black" : "WHITE";
+
+  await endGame(
+    game,
+    GameStatus.ABORTED,
+    opponentColor === "WHITE" ? "1-0" : "0-1",
+  );
+
+  io.to(gameId).emit("GAME_ABORTED", {
+    message: `Game is aborted by ${opponentColor.toLocaleLowerCase()}`,
+    abortedBy: userId,
+  });
 };
 
 export default reconnectionTimeoutJob;

@@ -74,11 +74,6 @@ const handleMove = async (socket) => {
         throw new Error("Illegal move.");
       }
 
-      console.log(
-        `Move made in game ${gameId}: ${result.san}, time spent: ${timeSpent}s`,
-        result.piece,
-      );
-
       const move = generateMovePayload(
         game.version + 1,
         result,
@@ -88,7 +83,6 @@ const handleMove = async (socket) => {
       );
 
       // update the game state in redis
-      console.log(`Updating game ${gameId} state in Redis with new move`);
       game.fen = chess.fen();
       game.version = game.version + 1;
       game.turn = result.color === "w" ? PlayerColor.BLACK : PlayerColor.WHITE; // next player's turn
@@ -96,15 +90,12 @@ const handleMove = async (socket) => {
       // Handle game-ending conditions
       if (move.isCheckmate) {
         const dbResult = result.color === "w" ? "1-0" : "0-1";
-        await endGame(game, GameStatus.FINISHED, dbResult, result);
+        await endGame(game, GameStatus.FINISHED, dbResult);
       } else if (move.isStalemate || chess.isDraw()) {
-        await endGame(game, GameStatus.FINISHED, "1/2-1/2", result);
+        await endGame(game, GameStatus.FINISHED, "1/2-1/2");
       }
       // Atomically store moves list and updated game
-      console.log(
-        `Storing move and updated game state for game ${gameId} in Redis`,
-        game,
-      );
+
       const movesKey = REDIS_KEYS.gameMoves(gameId);
       await redis
         .multi()
@@ -116,9 +107,6 @@ const handleMove = async (socket) => {
       await moveQueue.add("move", { ...move, gameId });
 
       // Broadcast to opponent
-      console.log(
-        `User ${socket.user.userId} made a move in game ${gameId}: ${move.san}`,
-      );
       io.to(gameId).emit("MOVE_MADE", {
         move,
         fen: game.fen,

@@ -1,4 +1,5 @@
 import redis from "../../config/redis.js";
+import { RESERVATION_TTL } from "../../constants/env.js";
 import { REDIS_KEYS } from "../../constants/keys.js";
 import reconnectionTimeoutQueue from "../../queues/reconnectionTimeout.queue.js";
 
@@ -17,12 +18,15 @@ const handleSocketConnection = async (socket) => {
   socket.on("disconnect", async () => {
     await redis.del(socketKey);
     const activeGameId = await redis.get(activeGameKey);
-    console.log("disconnecting socket had active game id:", activeGameId);
     if (activeGameId) {
-      await reconnectionTimeoutQueue.add("reconnection-timeout", {
-        userId,
-        gameId: activeGameId,
-      });
+      await reconnectionTimeoutQueue.add(
+        "reconnection-timeout",
+        {
+          userId,
+          gameId: activeGameId,
+        },
+        { delay: RESERVATION_TTL },
+      );
     }
     console.log("===socket disconnected ==== :", socket.id);
   });
