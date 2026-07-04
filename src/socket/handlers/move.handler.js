@@ -10,6 +10,7 @@ import { prepareDateForDb } from "../../utils/prepareDateForDb.js";
 import gameRepository from "../../modules/game/game.repository.js";
 import createMove from "../validations/move.validation.js";
 import { io } from "../../app.js";
+import { endGame, generateMovePayload, isPromotion } from "../../utils/game.js";
 
 const handleMove = async (socket) => {
   socket.on("MAKE_MOVE", async (data, callback) => {
@@ -59,15 +60,6 @@ const handleMove = async (socket) => {
       const chess = new Chess(game.fen);
 
       // validate the move
-      const isPromotion = (from, to, chess) => {
-        const piece = chess.get(from);
-        if (!piece || piece.type !== "p") return false;
-        const toRank = to[1];
-        return (
-          (piece.color === "w" && toRank === "8") ||
-          (piece.color === "b" && toRank === "1")
-        );
-      };
 
       const validateMove = {
         from,
@@ -87,28 +79,13 @@ const handleMove = async (socket) => {
         result.piece,
       );
 
-      const move = {
-        moveNumber: game.version + 1,
-        piece: PIECE_MAP[result.piece],
-        player: result.color === "w" ? "WHITE" : "BLACK",
-        from: result.from,
-        to: result.to,
-        captured: result.captured ? PIECE_MAP[result.captured] : null,
-        promotion: result.promotion ? PIECE_MAP[result.promotion] : null,
-        castle: result.flags.includes("k")
-          ? "KINGSIDE"
-          : result.flags.includes("q")
-            ? "QUEENSIDE"
-            : null,
-        fenAfter: chess.fen(),
-        san: result.san,
-        uci: `${result.from}${result.to}${result.promotion ?? ""}`,
-        timeSpent: timeSpent,
-        timestamp: prepareDateForDb(timestamp),
-        isCheck: chess.isCheck(),
-        isCheckmate: chess.isCheckmate(),
-        isStalemate: chess.isStalemate(),
-      };
+      const move = generateMovePayload(
+        game.version + 1,
+        result,
+        chess,
+        timeSpent,
+        timestamp,
+      );
 
       // update the game state in redis
       console.log(`Updating game ${gameId} state in Redis with new move`);
@@ -118,21 +95,10 @@ const handleMove = async (socket) => {
 
       // Handle game-ending conditions
       if (move.isCheckmate) {
-        game.status = GameStatus.FINISHED;
-        game.result = result.color === "w" ? "1-0" : "0-1";
-        const updateGame = await gameRepository.updateGame(gameId, {
-          status: GameStatus.FINISHED,
-          result: game.result,
-          turn: game.turn,
-        });
+        const dbResult = result.color === "w" ? "1-0" : "0-1";
+        await endGame(game, GameStatus.FINISHED, dbResult, result);
       } else if (move.isStalemate || chess.isDraw()) {
-        game.status = GameStatus.FINISHED;
-        game.result = "1/2-1/2";
-        const updateGame = await gameRepository.updateGame(gameId, {
-          status: GameStatus.FINISHED,
-          result: game.result,
-          turn: game.turn,
-        });
+        await endGame(game, GameStatus.FINISHED, "1/2-1/2", result);
       }
       // Atomically store moves list and updated game
       console.log(

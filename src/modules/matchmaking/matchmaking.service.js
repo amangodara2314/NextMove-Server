@@ -23,7 +23,7 @@ const newGame = async (userId) => {
   // find if the user is already in a game
   const userActiveGameKey = REDIS_KEYS.userActiveGame(userId);
 
-  const activeGameId = await redis.get(userActiveGameKey, userId);
+  const activeGameId = await redis.get(userActiveGameKey);
 
   if (activeGameId) {
     return { matchFound: true, reservationId: null, gameId: activeGameId };

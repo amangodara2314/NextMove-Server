@@ -84,8 +84,8 @@ const handleReservationAck = async (socket) => {
 
       // set both players active game in redis
       await Promise.all([
-        redis.set(REDIS_KEYS.userActiveGame(player1), game.id, "XX"),
-        redis.set(REDIS_KEYS.userActiveGame(player2), game.id, "XX"),
+        redis.set(REDIS_KEYS.userActiveGame(player1), game.id),
+        redis.set(REDIS_KEYS.userActiveGame(player2), game.id),
       ]);
 
       // notify both players that the match is ready with gameId

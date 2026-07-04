@@ -1,5 +1,5 @@
 import redis from "../config/redis.js";
-import handleReservationTimeoutJob from "../jobs/handleReservationTimeout.js";
+import handleReservationTimeoutJob from "../jobs/reservationTimeout.job.js";
 import { Worker } from "bullmq";
 
 const reservationTimeoutWorker = new Worker(
@@ -7,7 +7,7 @@ const reservationTimeoutWorker = new Worker(
   handleReservationTimeoutJob,
   {
     concurrency: 5,
-    connection: redis.duplicate(),
+    connection: redis,
   },
 );
 
