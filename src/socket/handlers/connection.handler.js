@@ -11,24 +11,26 @@ const handleSocketConnection = async (socket) => {
   await redis.set(socketKey, socket.id);
 
   // log the connected socket id and user id
-  console.log("=== socket connected ==== :", socket.id);
-  console.log("=== user === :", socket.user);
-  console.log("=== user email === :", socket?.user?.email);
+  console.log("socket connected :", socket.id);
+  console.log("user email :", socket?.user?.email);
 
   socket.on("disconnect", async () => {
     await redis.del(socketKey);
     const activeGameId = await redis.get(activeGameKey);
     if (activeGameId) {
+      console.log(
+        `socket ${socket.id} disconnected for user ${userId}. Scheduling reconnection timeout job for game ${activeGameId}.`,
+      );
       await reconnectionTimeoutQueue.add(
         "reconnection-timeout",
         {
           userId,
           gameId: activeGameId,
         },
-        { delay: RESERVATION_TTL },
+        { delay: RESERVATION_TTL * 1000 },
       );
     }
-    console.log("===socket disconnected ==== :", socket.id);
+    console.log("socket disconnected :", socket.id);
   });
 };
 

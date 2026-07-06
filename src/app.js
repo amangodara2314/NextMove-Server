@@ -9,6 +9,7 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import setupSocket from "./socket/index.js";
 import { FRONTEND_URL } from "./constants/env.js";
+import redis from "./config/redis.js";
 dotenv.config();
 
 const app = express();

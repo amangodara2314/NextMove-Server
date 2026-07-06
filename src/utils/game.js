@@ -4,13 +4,14 @@ import PIECE_MAP from "../constants/pieces.js";
 import gameRepository from "../modules/game/game.repository.js";
 import { prepareDateForDb } from "./prepareDateForDb.js";
 
-const endGame = async (game, status, dbResult) => {
+const endGame = async (game, status, dbResult, abortedBy) => {
   game.status = status;
   game.result = dbResult;
   const updateGame = await gameRepository.updateGame(game.id, {
     status: status,
     result: game.result,
     turn: game.turn,
+    abortedBy,
   });
   await Promise.all([
     redis.del(REDIS_KEYS.userActiveGame(game.white)),

@@ -26,7 +26,9 @@ const reconnectionTimeoutJob = async (job) => {
   }
 
   const gameKey = REDIS_KEYS.game(gameId);
-  const game = await redis.get(gameKey);
+  const cachedGame = await redis.get(gameKey);
+
+  const game = JSON.parse(cachedGame);
 
   if (!game) {
     console.log(`Game ${gameId} not found in Redis. No action needed.`);
@@ -43,16 +45,31 @@ const reconnectionTimeoutJob = async (job) => {
     `User ${userId} has not reconnected within the timeout. Handling disconnection for game ${gameId}.`,
   );
 
-  const opponentColor = game.white === userId ? "Black" : "WHITE";
+  const abortedByColor = game.white === userId ? "BLACK" : "WHITE";
 
   await endGame(
     game,
     GameStatus.ABORTED,
-    opponentColor === "WHITE" ? "1-0" : "0-1",
+    abortedByColor === "WHITE" ? "1-0" : "0-1",
+    abortedByColor,
   );
 
+  // redis cleanup
+  const opponentActiveKey = REDIS_KEYS.userActiveGame(
+    game.white === userId ? game.black : game.white,
+  );
+
+  const movesKey = REDIS_KEYS.gameMoves(gameId);
+
+  await Promise.all([
+    redis.del(activeGameKey),
+    redis.del(opponentActiveKey),
+    redis.del(gameKey),
+    redis.del(movesKey),
+  ]);
+
   io.to(gameId).emit("GAME_ABORTED", {
-    message: `Game is aborted by ${opponentColor.toLocaleLowerCase()}`,
+    message: `Game is aborted by ${abortedByColor.toLocaleLowerCase()}`,
     abortedBy: userId,
   });
 };

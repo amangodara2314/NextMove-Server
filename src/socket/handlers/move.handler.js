@@ -94,8 +94,8 @@ const handleMove = async (socket) => {
       } else if (move.isStalemate || chess.isDraw()) {
         await endGame(game, GameStatus.FINISHED, "1/2-1/2");
       }
-      // Atomically store moves list and updated game
 
+      // Atomically store moves list and updated game
       const movesKey = REDIS_KEYS.gameMoves(gameId);
       await redis
         .multi()
