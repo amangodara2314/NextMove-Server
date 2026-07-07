@@ -5,16 +5,18 @@ import gameRepository from "./game.repository.js";
 import AppError from "../../utils/AppError.js";
 import { INITIAL_FEN } from "../../constants/game.js";
 import { io } from "../../app.js";
+import { updatePlayerConnection } from "../../utils/reconnection.js";
 
 const getGame = async (gameId, userId) => {
   const key = REDIS_KEYS.game(gameId);
   // find the game in redis
-  const cachedGame = await redis.get(key);
+  const game = await gameRepository.getRedisGame(gameId);
   // return the cached game
-  if (cachedGame) {
-    const game = JSON.parse(cachedGame);
+  if (game) {
     // set userColor property for frontend
     game.userColor = game.white === userId ? "WHITE" : "BLACK";
+    // set the player status as active
+    await updatePlayerConnection(game.userColor, gameId);
     return { game };
   }
   // in case of cache miss query the database
@@ -48,25 +50,21 @@ const getGame = async (gameId, userId) => {
   // find the number of moves in the game
   const moveCount = await gameRepository.countMoves(gameId);
   game.version = moveCount;
-
+  const userColor = game.white === userId ? "WHITE" : "BLACK";
+  await updatePlayerConnection(userColor, gameId);
   // if the game is active cache it
   if (game.status === GameStatus.ACTIVE) {
-    await redis.set(
-      key,
-      JSON.stringify(game),
-      "EX",
-      60 * 60, // 1 hour
-    );
+    await gameRepository.createRedisGame(gameId, game, 60 * 60);
   }
 
   // set userColor property for frontend
-  game.userColor = game.white === userId ? "WHITE" : "BLACK";
+  game.userColor = userColor;
   return { game };
 };
 
 const getMoves = async (gameId, cursor = null, take = 20) => {
   const gameKey = REDIS_KEYS.game(gameId);
-  let game = await redis.get(gameKey);
+  let game = await gameRepository.getRedisGame(gameId);
 
   // fallback to DB
   if (game) {

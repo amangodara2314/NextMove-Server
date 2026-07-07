@@ -1,4 +1,6 @@
 import prisma from "../../config/prisma.js";
+import redis from "../../config/redis.js";
+import { REDIS_KEYS } from "../../constants/keys.js";
 
 const createGame = async (data) => {
   return await prisma.game.create({ data });
@@ -53,6 +55,34 @@ const findMoves = async (query) => {
   return await prisma.move.findMany(query);
 };
 
+const createRedisGame = async (gameId, data, expiresIn = 60 * 60) => {
+  const key = REDIS_KEYS.game(gameId);
+  const pipeline = redis.pipeline();
+  pipeline.hset(key, data);
+  pipeline.expire(key, expiresIn); // expiresIn in seconds
+  return await pipeline.exec();
+};
+
+const updateRedisGame = async (gameId, data) => {
+  const key = REDIS_KEYS.game(gameId);
+  return await redis.hset(key, data);
+};
+
+const getRedisGame = async (gameId) => {
+  const game = await redis.hgetall(REDIS_KEYS.game(gameId));
+
+  if (Object.keys(game).length === 0) return null;
+
+  return {
+    ...game,
+    version: Number(game.version),
+    whiteTime: Number(game.whiteTime),
+    blackTime: Number(game.blackTime),
+    whiteConnected: game.whiteConnected === "true",
+    blackConnected: game.blackConnected === "true",
+  };
+};
+
 export default {
   createGame,
   findGame,
@@ -63,4 +93,7 @@ export default {
   updateGame,
   findMoves,
   findGameById,
+  createRedisGame,
+  getRedisGame,
+  updateRedisGame,
 };
