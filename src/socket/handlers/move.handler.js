@@ -37,13 +37,12 @@ const handleMove = async (socket) => {
     try {
       // Fetch the current game state from Redis
       const gameKey = REDIS_KEYS.game(gameId);
-      const cachedGame = await redis.get(gameKey);
+      const game = await gameRepository.getRedisGame(gameId);
 
-      if (!cachedGame) {
+      if (!game) {
         throw new Error("Game state not found.");
       }
 
-      const game = JSON.parse(cachedGame);
       // if the game is not active, return error
       if (game && game.status !== "ACTIVE") {
         throw new Error("Game is not active.");
@@ -96,11 +95,16 @@ const handleMove = async (socket) => {
       }
 
       // Atomically store moves list and updated game
+      const serializedGame = {
+        ...game,
+        whitePlayer: JSON.stringify(game.whitePlayer),
+        blackPlayer: JSON.stringify(game.blackPlayer),
+      };
       const movesKey = REDIS_KEYS.gameMoves(gameId);
       await redis
         .multi()
         .rpush(movesKey, JSON.stringify(move))
-        .set(gameKey, JSON.stringify(game))
+        .hset(gameKey, serializedGame)
         .exec();
 
       // Queue DB write

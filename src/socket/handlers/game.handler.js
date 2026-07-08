@@ -1,5 +1,6 @@
 import redis from "../../config/redis.js";
 import { REDIS_KEYS } from "../../constants/keys.js";
+import gameRepository from "../../modules/game/game.repository.js";
 
 const handleGame = async (socket) => {
   socket.on("JOIN_GAME", async (data, callback) => {
@@ -15,12 +16,11 @@ const handleGame = async (socket) => {
 
       // Fetch the current game state from Redis
       const gameKey = REDIS_KEYS.game(gameId);
-      const cachedGame = await redis.get(gameKey);
+      const game = await gameRepository.getRedisGame(gameId);
 
-      if (!cachedGame) {
+      if (!game) {
         throw new Error("Game state not found.");
       }
-      const game = JSON.parse(cachedGame);
 
       // check if the game is active
       if (game && game.status !== "ACTIVE") {

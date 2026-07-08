@@ -17,6 +17,13 @@ const getGame = async (gameId, userId) => {
     game.userColor = game.white === userId ? "WHITE" : "BLACK";
     // set the player status as active
     await updatePlayerConnection(game.userColor, gameId);
+
+    io.to(gameId).emit("PLAYER_RECONNECTED", {
+      userId,
+      color: game.userColor,
+      message: `Player ${game.userColor.toLowerCase()} has reconnected`,
+    });
+
     return { game };
   }
   // in case of cache miss query the database
@@ -37,29 +44,40 @@ const getGame = async (gameId, userId) => {
       },
     },
   };
-  const game = await gameRepository.findGame(gameId, query);
+  const dbGame = await gameRepository.findGame(gameId, query);
 
-  if (!game) {
+  if (!dbGame) {
     throw new AppError("Game not found");
   }
 
   // find the current fen of game
   const currentFen = await gameRepository.getGameFen(gameId);
-  game.currentFen = currentFen ? currentFen.fenAfter : INITIAL_FEN;
+  dbGame.currentFen = currentFen ? currentFen.fenAfter : INITIAL_FEN;
 
   // find the number of moves in the game
   const moveCount = await gameRepository.countMoves(gameId);
-  game.version = moveCount;
-  const userColor = game.white === userId ? "WHITE" : "BLACK";
+  dbGame.version = moveCount;
+  const userColor = dbGame.white === userId ? "WHITE" : "BLACK";
   await updatePlayerConnection(userColor, gameId);
   // if the game is active cache it
-  if (game.status === GameStatus.ACTIVE) {
-    await gameRepository.createRedisGame(gameId, game, 60 * 60);
+  if (dbGame.status === GameStatus.ACTIVE) {
+    io.to(gameId).emit("PLAYER_RECONNECTED", {
+      userId,
+      color: userColor,
+    });
+
+    const serializeGame = {
+      ...dbGame,
+      whitePlayer: JSON.stringify(dbGame.whitePlayer),
+      blackPlayer: JSON.stringify(dbGame.blackPlayer),
+    };
+
+    await gameRepository.createRedisGame(gameId, serializeGame, 60 * 60);
   }
 
   // set userColor property for frontend
-  game.userColor = userColor;
-  return { game };
+  dbGame.userColor = userColor;
+  return { game: dbGame };
 };
 
 const getMoves = async (gameId, cursor = null, take = 20) => {
@@ -67,9 +85,7 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
   let game = await gameRepository.getRedisGame(gameId);
 
   // fallback to DB
-  if (game) {
-    game = JSON.parse(game);
-  } else {
+  if (!game) {
     game = await gameRepository.findGameById(gameId);
   }
 

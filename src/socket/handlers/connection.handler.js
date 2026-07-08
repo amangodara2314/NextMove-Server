@@ -34,7 +34,7 @@ const handleSocketConnection = async (socket) => {
             userId,
             gameId: activeGameId,
           },
-          { delay: RESERVATION_TTL * 1000, jobId: `${userId}:${activeGameId}` },
+          { delay: RESERVATION_TTL * 1000, jobId: `${userId}_${activeGameId}` },
         );
       }
     }

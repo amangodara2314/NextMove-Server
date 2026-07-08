@@ -57,8 +57,13 @@ const findMoves = async (query) => {
 
 const createRedisGame = async (gameId, data, expiresIn = 60 * 60) => {
   const key = REDIS_KEYS.game(gameId);
+  const serialized = {
+    ...data,
+    whitePlayer: JSON.stringify(data?.whitePlayer),
+    blackPlayer: JSON.stringify(data?.blackPlayer),
+  };
   const pipeline = redis.pipeline();
-  pipeline.hset(key, data);
+  pipeline.hset(key, serialized);
   pipeline.expire(key, expiresIn); // expiresIn in seconds
   return await pipeline.exec();
 };
@@ -70,7 +75,6 @@ const updateRedisGame = async (gameId, data) => {
 
 const getRedisGame = async (gameId) => {
   const game = await redis.hgetall(REDIS_KEYS.game(gameId));
-
   if (Object.keys(game).length === 0) return null;
 
   return {
@@ -80,6 +84,8 @@ const getRedisGame = async (gameId) => {
     blackTime: Number(game.blackTime),
     whiteConnected: game.whiteConnected === "true",
     blackConnected: game.blackConnected === "true",
+    whitePlayer: game.whitePlayer ? JSON.parse(game.whitePlayer) : null,
+    blackPlayer: game.blackPlayer ? JSON.parse(game.blackPlayer) : null,
   };
 };
 

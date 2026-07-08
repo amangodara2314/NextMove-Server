@@ -1,4 +1,4 @@
-import gameRepository from "../modules/game/game.repository";
+import gameRepository from "../modules/game/game.repository.js";
 
 const updatePlayerConnection = async (
   userColor,

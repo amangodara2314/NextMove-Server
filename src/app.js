@@ -49,5 +49,6 @@ app.use((req, res) => {
 
 app.use(errorMiddleware);
 
+// redis.flushdb();
 export { io };
 export default httpServer;

@@ -14,7 +14,7 @@ const reconnectionTimeoutJob = async (job) => {
   // confirm if the user is still disconnected and the game is still active
   const activeGameKey = REDIS_KEYS.userActiveGame(userId);
 
-  const activeGameId = await redis.get(activeGameKey),
+  const activeGameId = await redis.get(activeGameKey);
 
   if (activeGameId !== gameId) {
     console.log(
@@ -25,7 +25,7 @@ const reconnectionTimeoutJob = async (job) => {
 
   const game = await gameRepository.getRedisGame(gameId);
 
-if (!game || Object.keys(game).length === 0) {
+  if (!game || Object.keys(game).length === 0) {
     console.log(`Game ${gameId} not found in Redis. No action needed.`);
     return;
   }
@@ -37,7 +37,8 @@ if (!game || Object.keys(game).length === 0) {
 
   const userColor = game.white === userId ? "WHITE" : "BLACK";
 
-  const isConnected = userColor === "WHITE" ? game?.whiteConnected : game?.blackConnected
+  const isConnected =
+    userColor === "WHITE" ? game?.whiteConnected : game?.blackConnected;
 
   if (isConnected) {
     return;
@@ -61,7 +62,7 @@ if (!game || Object.keys(game).length === 0) {
   );
 
   const movesKey = REDIS_KEYS.gameMoves(gameId);
-
+  const gameKey = REDIS_KEYS.game(gameId);
   await Promise.all([
     redis.del(activeGameKey),
     redis.del(opponentActiveKey),
