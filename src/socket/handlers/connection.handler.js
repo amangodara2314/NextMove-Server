@@ -24,6 +24,10 @@ const handleSocketConnection = async (socket) => {
     }
     const activeGameId = await redis.get(activeGameKey);
     if (activeGameId) {
+      console.log("User disconnected from active game:", {
+        userId,
+        activeGameId,
+      });
       const game = await gameRepository.getRedisGame(activeGameId);
       if (game && game.status === GameStatus.ACTIVE) {
         const userColor = game.white === userId ? "WHITE" : "BLACK";

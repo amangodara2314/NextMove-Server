@@ -58,7 +58,7 @@ const getGame = async (gameId, userId) => {
   const moveCount = await gameRepository.countMoves(gameId);
   dbGame.version = moveCount;
   const userColor = dbGame.white === userId ? "WHITE" : "BLACK";
-  await updatePlayerConnection(userColor, gameId);
+
   // if the game is active cache it
   if (dbGame.status === GameStatus.ACTIVE) {
     io.to(gameId).emit("PLAYER_RECONNECTED", {
@@ -66,13 +66,8 @@ const getGame = async (gameId, userId) => {
       color: userColor,
     });
 
-    const serializeGame = {
-      ...dbGame,
-      whitePlayer: JSON.stringify(dbGame.whitePlayer),
-      blackPlayer: JSON.stringify(dbGame.blackPlayer),
-    };
-
-    await gameRepository.createRedisGame(gameId, serializeGame, 60 * 60);
+    await gameRepository.createRedisGame(gameId, dbGame, 60 * 60);
+    await updatePlayerConnection(userColor, gameId);
   }
 
   // set userColor property for frontend
@@ -81,7 +76,6 @@ const getGame = async (gameId, userId) => {
 };
 
 const getMoves = async (gameId, cursor = null, take = 20) => {
-  const gameKey = REDIS_KEYS.game(gameId);
   let game = await gameRepository.getRedisGame(gameId);
 
   // fallback to DB

@@ -70,13 +70,14 @@ const createRedisGame = async (gameId, data, expiresIn = 60 * 60) => {
 
 const updateRedisGame = async (gameId, data) => {
   const key = REDIS_KEYS.game(gameId);
+  const exists = await redis.exists(key);
+  if (!exists) return null; // don't create a stray partial hash
   return await redis.hset(key, data);
 };
 
 const getRedisGame = async (gameId) => {
   const game = await redis.hgetall(REDIS_KEYS.game(gameId));
   if (Object.keys(game).length === 0) return null;
-
   return {
     ...game,
     version: Number(game.version),

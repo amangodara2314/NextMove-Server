@@ -9,10 +9,10 @@ const updatePlayerConnection = async (
   const updateData = {};
   if (userColor === "WHITE") {
     updateData.whiteConnected = isConnected;
-    updateData.whiteDisconnectedAt = isConnected ? null : Date.now();
+    updateData.whiteDisconnectedAt = isConnected ? "" : String(Date.now());
   } else {
     updateData.blackConnected = isConnected;
-    updateData.blackDisconnectedAt = isConnected ? null : Date.now();
+    updateData.blackDisconnectedAt = isConnected ? "" : String(Date.now());
   }
   await gameRepository.updateRedisGame(gameId, updateData);
 };

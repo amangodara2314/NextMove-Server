@@ -33,6 +33,14 @@ const handleGame = async (socket) => {
         throw new Error("You are not a player in this game.");
       }
 
+      // check if the activeGameKey is set for the user
+      const activeGameKey = REDIS_KEYS.userActiveGame(userId);
+      const exists = await redis.exists(activeGameKey);
+      if (!exists) {
+        console.log(`Setting active game for user ${userId} to ${gameId}`);
+        await redis.set(activeGameKey, gameId);
+      }
+
       // Join the game room
       socket.join(gameId);
       console.log(`User ${userId} joined game ${gameId}`);

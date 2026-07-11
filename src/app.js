@@ -9,12 +9,14 @@ import { createServer } from "http";
 import { Server } from "socket.io";
 import setupSocket from "./socket/index.js";
 import { FRONTEND_URL } from "./constants/env.js";
-import redis from "./config/redis.js";
+import redis, { pubClient, subClient } from "./config/redis.js";
+import { createAdapter } from "@socket.io/redis-adapter";
 dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
+  adapter: createAdapter(pubClient, subClient),
   cors: {
     origin: FRONTEND_URL,
   },
@@ -49,6 +51,5 @@ app.use((req, res) => {
 
 app.use(errorMiddleware);
 
-// redis.flushdb();
 export { io };
 export default httpServer;

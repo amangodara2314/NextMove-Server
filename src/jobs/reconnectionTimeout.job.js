@@ -4,6 +4,7 @@ import redis from "../config/redis.js";
 import { endGame } from "../utils/game.js";
 import { io } from "../app.js";
 import gameRepository from "../modules/game/game.repository.js";
+import { notify } from "../utils/notifier.js";
 
 const reconnectionTimeoutJob = async (job) => {
   console.log(
@@ -56,6 +57,26 @@ const reconnectionTimeoutJob = async (job) => {
     userColor,
   );
 
+  console.log(`Notifying players about game abortion for game ${gameId}.`);
+  const room = io.sockets.adapter.rooms.get(gameId);
+  console.log(
+    `Room ${gameId} has ${room ? room.size : 0} sockets (in this process)`,
+  );
+
+  // io.to(gameId).emit("GAME_ABORTED", {
+  //   message: `Game is aborted by ${userColor.toLocaleLowerCase()}`,
+  //   abortedBy: userColor,
+  // });
+
+  notify({
+    room: gameId,
+    event: "GAME_ABORTED",
+    payload: {
+      message: `Game is aborted by ${userColor.toLocaleLowerCase()}`,
+      abortedBy: userColor,
+    },
+  });
+
   // redis cleanup
   const opponentActiveKey = REDIS_KEYS.userActiveGame(
     game.white === userId ? game.black : game.white,
@@ -70,10 +91,7 @@ const reconnectionTimeoutJob = async (job) => {
     redis.del(movesKey),
   ]);
 
-  io.to(gameId).emit("GAME_ABORTED", {
-    message: `Game is aborted by ${userColor.toLocaleLowerCase()}`,
-    abortedBy: userId,
-  });
+  console.log("Game aborted and Redis cleaned up for game", gameId);
 };
 
 export default reconnectionTimeoutJob;
