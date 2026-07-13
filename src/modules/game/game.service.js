@@ -10,13 +10,15 @@ import { updatePlayerConnection } from "../../utils/reconnection.js";
 const getGame = async (gameId, userId) => {
   const key = REDIS_KEYS.game(gameId);
   // find the game in redis
-  const game = await gameRepository.getRedisGame(gameId);
+  let game = await gameRepository.getRedisGame(gameId);
   // return the cached game
   if (game) {
     // set userColor property for frontend
     game.userColor = game.white === userId ? "WHITE" : "BLACK";
     // set the player status as active
-    await updatePlayerConnection(game.userColor, gameId);
+    const updatedData = await updatePlayerConnection(game.userColor, gameId);
+
+    game = { ...game, ...updatedData };
 
     io.to(gameId).emit("PLAYER_RECONNECTED", {
       userId,
