@@ -1,4 +1,4 @@
-import { GameStatus } from "@prisma/client";
+import { GameStatus, TimeControl } from "@prisma/client";
 import redis from "../../config/redis.js";
 import { REDIS_KEYS } from "../../constants/keys.js";
 import gameRepository from "./game.repository.js";
@@ -152,4 +152,27 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
     source: "db",
   };
 };
-export default { getGame, getMoves };
+
+const getTimeControlSettings = () => {
+  const timeControls = Object.values(TimeControl);
+  const settings = {};
+  settings.types = [];
+
+  for (const timeControl of timeControls) {
+    const [type, base, increment] = timeControl.split("_");
+    const setting = {
+      title: increment === "0" ? `${base}m` : `${base}+${increment}`,
+      baseTime: base * 60 * 1000, // convert minutes to milliseconds
+      increment: increment * 1000, // convert seconds to milliseconds
+    };
+    if (!settings[type]) {
+      settings[type] = [];
+      settings.types.push(type);
+    }
+
+    settings[type].push(setting);
+  }
+  return settings;
+};
+
+export default { getGame, getMoves, getTimeControlSettings };
