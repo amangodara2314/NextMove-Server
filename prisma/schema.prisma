@@ -54,6 +54,9 @@ model Game {
   status GameStatus @default(ACTIVE)
   abortedBy PlayerColor?
 
+  whiteTimeLeft Int? // in ms
+  blackTimeLeft Int? // in ms
+  timeControl TimeControl
   lastMoveAt DateTime?
 
   moves  Move[]
@@ -121,4 +124,14 @@ enum GameStatus {
   ACTIVE
   FINISHED
   ABORTED
+  DRAW
+}
+
+enum TimeControl {
+  BULLET_1_0
+  BLITZ_3_0
+  BLITZ_5_0
+  RAPID_10_0
+  RAPID_15_0
+  RAPID_25_0
 }

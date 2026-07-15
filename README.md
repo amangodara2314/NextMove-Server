@@ -4,6 +4,6 @@ Stack used - Node.js, Express.js, Prisma ORM, Postgresql, Socket.io, Redis, Bull
 
 # System Design
 
-![alt text](<Screenshot 2026-06-08 145530.png>)
-![alt text](<game system design.png>)
-![alt text](image.png)
+![Matchmaking System Design](matchmaking.png)
+![Game System Design](<game system design.png>)
+![Player Reconnection System Design](player-reconnection.png)
