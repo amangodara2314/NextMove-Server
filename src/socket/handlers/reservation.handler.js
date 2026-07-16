@@ -56,6 +56,7 @@ const handleReservationAck = async (socket) => {
       // if players are ready, create a game and notify them
       const player1 = result[1];
       const player2 = result[2];
+      const timeControl = result[3];
 
       if (!player1 || !player2) {
         console.warn("[MATCH_ACK] missing players from lua", {
@@ -74,6 +75,7 @@ const handleReservationAck = async (socket) => {
       const game = await gameRepository.createGame({
         white,
         black,
+        timeControl,
       });
 
       // get sockets of both players

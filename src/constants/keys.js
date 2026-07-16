@@ -6,7 +6,8 @@ const getRedisKey = (...args) => {
 };
 
 const REDIS_KEYS = {
-  matchmakingQueue: () => getRedisKey("matchmaking", "queue"),
+  matchmakingQueue: (timeControl) =>
+    getRedisKey("matchmaking", "queue", timeControl),
   matchmakingJoinedAt: () => getRedisKey("matchmaking", "joinedAt"),
   userSocket: (userId) => getRedisKey("user", userId, "socket"),
   socketRateLimit: (userId) => getRedisKey("rate", "socket", userId),

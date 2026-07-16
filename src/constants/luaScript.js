@@ -123,7 +123,8 @@ if player1Ack == "true" and player2Ack == "true" then
     return {
         "READY",
         data.player1,
-        data.player2
+        data.player2,
+        data.timeControl
     }
 end
 

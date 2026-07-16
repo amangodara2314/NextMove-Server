@@ -21,9 +21,4 @@ const getMoves = async (req, res) => {
   return successResponse(res, 200, result, "Moves found");
 };
 
-const getTimeControlSettings = (req, res) => {
-  const settings = gameService.getTimeControlSettings();
-  return successResponse(res, 200, settings, "Settings Found");
-};
-
-export default { getGame, getMoves, getTimeControlSettings };
+export default { getGame, getMoves };

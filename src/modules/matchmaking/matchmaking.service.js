@@ -14,8 +14,9 @@ import {
 import { io } from "../../app.js";
 import reservationTimeoutQueue from "../../queues/reservationTimeout.queue.js";
 import { v4 as uuidv4 } from "uuid";
+import { TimeControl } from "@prisma/client";
 
-const newGame = async (userId) => {
+const newGame = async (userId, timeControl) => {
   if (!userId) {
     throw new AppError("userId not found", 404);
   }
@@ -40,7 +41,7 @@ const newGame = async (userId) => {
   const rating = user.rating;
 
   // check if the user is already in matchmaking queue
-  const queueKey = REDIS_KEYS.matchmakingQueue();
+  const queueKey = REDIS_KEYS.matchmakingQueue(timeControl);
   const joinedAtKey = REDIS_KEYS.matchmakingJoinedAt();
   const userStateKey = REDIS_KEYS.userState(userId);
 
@@ -72,6 +73,7 @@ const newGame = async (userId) => {
       player1Ack: "false",
       player2Ack: "false",
       createdAt: Date.now(),
+      timeControl,
     };
     const reservation = await matchmakingRepository.createReservation(
       key,
@@ -122,4 +124,27 @@ const newGame = async (userId) => {
   return { matchFound: false };
 };
 
-export default { newGame };
+const getTimeControlSettings = () => {
+  const timeControls = Object.values(TimeControl);
+  const settings = {};
+  settings.types = [];
+
+  for (const timeControl of timeControls) {
+    const [type, base, increment] = timeControl.split("_");
+    const setting = {
+      title: increment === "0" ? `${base}m` : `${base}+${increment}`,
+      baseTime: base * 60 * 1000, // convert minutes to milliseconds
+      increment: increment * 1000, // convert seconds to milliseconds
+      timeControl,
+    };
+    if (!settings[type]) {
+      settings[type] = [];
+      settings.types.push(type);
+    }
+
+    settings[type].push(setting);
+  }
+  return settings;
+};
+
+export default { newGame, getTimeControlSettings };

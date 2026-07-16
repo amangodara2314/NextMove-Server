@@ -1,11 +1,15 @@
 import { io } from "../app.js";
 import redis from "../config/redis.js";
 import { REDIS_KEYS } from "../constants/keys.js";
+import { notify } from "../utils/notifier.js";
 
 const notifyPlayer = async (userId) => {
   const socketKey = REDIS_KEYS.userSocket(userId);
   const socketId = await redis.get(socketKey);
-  io.to(socketId).emit("NO_MATCH_FOUND");
+  notify({
+    event: "NO_MATCH_FOUND",
+    room: socketId,
+  });
 };
 
 const handleReservationTimeoutJob = async (job) => {
