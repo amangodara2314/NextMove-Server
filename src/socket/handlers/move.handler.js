@@ -12,7 +12,7 @@ import createMove from "../validations/move.validation.js";
 import { io } from "../../app.js";
 import { endGame, generateMovePayload, isPromotion } from "../../utils/game.js";
 
-const handleMove = async (socket) => {
+const handleMoveEvents = async (socket) => {
   socket.on("MAKE_MOVE", async (data, callback) => {
     // Validate data object using zod
     const result = createMove.safeParse(data);
@@ -144,4 +144,4 @@ const handleMove = async (socket) => {
   });
 };
 
-export default handleMove;
+export default handleMoveEvents;

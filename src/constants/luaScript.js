@@ -1,7 +1,7 @@
 const matchmakingLuaScript = `
 -- KEYS[1] = matchmaking queue key 
 -- KEYS[2] = joinedAt queue key 
--- KEYS[3] = user state key
+-- KEYS[3] = user matchmaking queue key
 
 -- ARGV[1] = userId 
 -- ARGV[2] = rating
@@ -11,26 +11,16 @@ const matchmakingLuaScript = `
 
 local queueKey = KEYS[1]
 local joinedAtKey = KEYS[2]
-local userStateKey = KEYS[3]
+local userMatchmakingQueueKey = KEYS[3]
 local userId = ARGV[1]
 local rating = tonumber(ARGV[2])
 local now = tonumber(ARGV[3])
 local range = tonumber(ARGV[4])
 local timeout = tonumber(ARGV[5])
+local timeControl = ARGV[6]
 
 -- Check if user is already in a match or reservation
 
-local userState = redis.call("GET", userStateKey)
-
-if userState then
-    local stateType, id = string.match(userState, "([^:]+):(.+)")
-
-    if stateType == "in-game" then
-        return { "IN_GAME", id }
-    elseif stateType == "reserved" then
-        return { "RESERVED", id }
-    end
-end
 
 -- Remove expired keys 
 
@@ -57,6 +47,7 @@ for i = 1, #candidates do
         -- match found
         redis.call("ZREM", queueKey, candidate)
         redis.call("ZREM", joinedAtKey, candidate)
+        redis.call("DEL", userMatchmakingQueueKey)
         return candidate
     end
 end
@@ -67,6 +58,7 @@ local exists = redis.call("ZSCORE", queueKey, userId)
 if not exists then 
     redis.call("ZADD", queueKey, rating, userId)
     redis.call("ZADD", joinedAtKey, now, userId)
+    redis.call("SET", userMatchmakingQueueKey, timeControl, "PX", timeout)
 end
 
 return nil
@@ -133,4 +125,23 @@ return {
 }
 `;
 
-export { matchmakingLuaScript, reservationLuaScript };
+const cancelMatchmakingLuaScript = `
+-- KEYS[1] = matchmaking queue (ZSET)
+-- KEYS[2] = matchmaking joinedAt (HASH)
+
+-- ARGV[1] = userId
+
+local removed = redis.call("ZREM", KEYS[1], ARGV[1])
+
+if removed == 1 then
+    redis.call("HDEL", KEYS[2], ARGV[1])
+end
+
+return removed
+`;
+
+export {
+  matchmakingLuaScript,
+  reservationLuaScript,
+  cancelMatchmakingLuaScript,
+};

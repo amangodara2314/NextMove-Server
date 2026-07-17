@@ -9,10 +9,11 @@ const REDIS_KEYS = {
   matchmakingQueue: (timeControl) =>
     getRedisKey("matchmaking", "queue", timeControl),
   matchmakingJoinedAt: () => getRedisKey("matchmaking", "joinedAt"),
+  userMatchmakingQueue: (userId) =>
+    getRedisKey("user", userId, "matchmakingQueue"),
   userSocket: (userId) => getRedisKey("user", userId, "socket"),
   socketRateLimit: (userId) => getRedisKey("rate", "socket", userId),
   reservation: (reservationId) => getRedisKey("reservations", reservationId),
-  userState: (userId) => getRedisKey("user", userId, "state"),
   game: (gameId) => getRedisKey("game", gameId),
   gameMoves: (gameId) => getRedisKey("game", gameId, "moves"),
   userActiveGame: (userId) => getRedisKey("activeGame", userId),

@@ -43,19 +43,29 @@ const newGame = async (userId, timeControl) => {
   // check if the user is already in matchmaking queue
   const queueKey = REDIS_KEYS.matchmakingQueue(timeControl);
   const joinedAtKey = REDIS_KEYS.matchmakingJoinedAt();
-  const userStateKey = REDIS_KEYS.userState(userId);
+  const userMatchmakingQueueKey = REDIS_KEYS.userMatchmakingQueue(userId);
+
+  const isInQueue = await redis.get(userMatchmakingQueueKey);
+
+  if (isInQueue) {
+    console.log(
+      `User ${userId} is already in matchmaking queue for timeControl ${isInQueue}`,
+    );
+    return { matchFound: false, reservationId: null };
+  }
 
   const opponent = await redis.eval(
     matchmakingLuaScript,
     3,
     queueKey,
     joinedAtKey,
-    userStateKey,
+    userMatchmakingQueueKey,
     userId,
     rating,
     Date.now(),
     RATING_RANGE,
     MATCHMAKING_TIMEOUT * 1000,
+    timeControl,
   );
 
   // if opponent is not null, it means a match is found
@@ -75,6 +85,7 @@ const newGame = async (userId, timeControl) => {
       createdAt: Date.now(),
       timeControl,
     };
+
     const reservation = await matchmakingRepository.createReservation(
       key,
       data,
@@ -90,7 +101,6 @@ const newGame = async (userId, timeControl) => {
     ]);
 
     console.info("socket of user and opponent :", userSocket, opponentSocket);
-
     // Notify both players via WebSockets
 
     if (userSocket) {

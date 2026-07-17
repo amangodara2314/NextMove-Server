@@ -2,7 +2,7 @@ import redis from "../../config/redis.js";
 import { REDIS_KEYS } from "../../constants/keys.js";
 import gameRepository from "../../modules/game/game.repository.js";
 
-const handleGame = async (socket) => {
+const handleGameEvents = async (socket) => {
   socket.on("JOIN_GAME", async (data, callback) => {
     try {
       const { gameId } = data;
@@ -60,4 +60,4 @@ const handleGame = async (socket) => {
   });
 };
 
-export default handleGame;
+export default handleGameEvents;
