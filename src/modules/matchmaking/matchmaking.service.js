@@ -54,19 +54,29 @@ const newGame = async (userId, timeControl) => {
     return { matchFound: false, reservationId: null };
   }
 
-  const opponent = await redis.eval(
-    matchmakingLuaScript,
-    3,
-    queueKey,
-    joinedAtKey,
-    userMatchmakingQueueKey,
-    userId,
-    rating,
-    Date.now(),
-    RATING_RANGE,
-    MATCHMAKING_TIMEOUT * 1000,
-    timeControl,
-  );
+  let opponent;
+  try {
+    opponent = await redis.eval(
+      matchmakingLuaScript,
+      3,
+      queueKey,
+      joinedAtKey,
+      userMatchmakingQueueKey,
+      userId,
+      rating,
+      Date.now(),
+      RATING_RANGE,
+      MATCHMAKING_TIMEOUT * 1000,
+      timeControl,
+    );
+  } catch (err) {
+    console.error("matchmaking eval failed:", err.message, {
+      userId,
+      rating,
+      timeControl,
+    });
+    throw err;
+  }
 
   // if opponent is not null, it means a match is found
   if (opponent) {
@@ -90,6 +100,8 @@ const newGame = async (userId, timeControl) => {
       key,
       data,
     );
+
+    const opponentMatchingQueueKey = REDIS_KEYS.userMatchmakingQueue(opponent);
     // add the reservation to queue to for cleanup
     await reservationTimeoutQueue.add("reservation-timeout", reservation, {
       delay: RESERVATION_TTL * 1000 + 1,
@@ -98,6 +110,7 @@ const newGame = async (userId, timeControl) => {
     const [userSocket, opponentSocket] = await Promise.all([
       redis.get(REDIS_KEYS.userSocket(userId)),
       redis.get(REDIS_KEYS.userSocket(opponent)),
+      redis.del(opponentMatchingQueueKey), // remove the opponent from matchmaking queue
     ]);
 
     console.info("socket of user and opponent :", userSocket, opponentSocket);
@@ -124,7 +137,7 @@ const newGame = async (userId, timeControl) => {
   // add the userId to matchmaking-timeout queue to notify user if no opponent is available
   await matchmakingTimeoutQueue.add(
     "matchmaking-timeout",
-    { userId },
+    { userId, timeControl },
     {
       delay: MATCHMAKING_TIMEOUT * 1000 + 2,
       jobId: `matchmaking-timeout-${userId}`,

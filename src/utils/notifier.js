@@ -5,6 +5,7 @@ const emitter = new Emitter(pubClient);
 
 function notify({ event, room, payload = {} }) {
   emitter.to(room).emit(event, payload);
+  console.log(`Notification sent to room ${room} for event ${event}`, payload);
 }
 
 export { notify };

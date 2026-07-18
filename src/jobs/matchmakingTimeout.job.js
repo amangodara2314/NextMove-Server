@@ -1,15 +1,18 @@
 import { io } from "../app.js";
 import redis from "../config/redis.js";
 import { REDIS_KEYS } from "../constants/keys.js";
+import { notify } from "../utils/notifier.js";
 
 const handleMatchmakingTimeoutJob = async (job) => {
   try {
-    const { userId } = job.data;
+    const { userId, timeControl } = job.data;
 
-    console.log(`Handling matchmaking timeout for user ${userId}`);
+    console.log(
+      `Handling matchmaking timeout for user ${userId} for timeControl ${timeControl}`,
+    );
 
     // check if user is still in the queue
-    const queueKey = REDIS_KEYS.matchmakingQueue();
+    const queueKey = REDIS_KEYS.matchmakingQueue(timeControl);
     const joinedAtKey = REDIS_KEYS.matchmakingJoinedAt();
     const userMatchmakingQueueKey = REDIS_KEYS.userMatchmakingQueue(userId);
 
@@ -25,8 +28,10 @@ const handleMatchmakingTimeoutJob = async (job) => {
         `User ${userId} removed from matchmaking queue due to timeout`,
       );
       // Notify the user via WebSockets
-      io.to(userId).emit("MATCHMAKING_TIMEOUT", {
-        message: "We couldn't find a match for you in time.",
+      notify({
+        event: "NO_MATCH_FOUND",
+        room: userId,
+        payload: { message: "We couldn't find a match for you in time." },
       });
     }
   } catch (error) {

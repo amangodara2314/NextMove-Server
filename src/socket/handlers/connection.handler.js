@@ -16,6 +16,7 @@ const handleSocketConnection = async (socket) => {
   // log the connected socket id and user id
   console.log("socket connected :", socket.id);
   console.log("user email :", socket?.user?.email);
+  socket.join(userId);
 
   socket.on("disconnect", async () => {
     const currSocket = await redis.get(socketKey);

@@ -18,6 +18,7 @@ local now = tonumber(ARGV[3])
 local range = tonumber(ARGV[4])
 local timeout = tonumber(ARGV[5])
 local timeControl = ARGV[6]
+local ttlSeconds = math.max(1, math.floor(timeout / 1000))
 
 -- Check if user is already in a match or reservation
 
@@ -58,7 +59,8 @@ local exists = redis.call("ZSCORE", queueKey, userId)
 if not exists then 
     redis.call("ZADD", queueKey, rating, userId)
     redis.call("ZADD", joinedAtKey, now, userId)
-    redis.call("SET", userMatchmakingQueueKey, timeControl, "PX", timeout)
+    redis.call("SET", userMatchmakingQueueKey, timeControl)
+    redis.call('EXPIRE', userMatchmakingQueueKey, ttlSeconds)
 end
 
 return nil
@@ -125,23 +127,4 @@ return {
 }
 `;
 
-const cancelMatchmakingLuaScript = `
--- KEYS[1] = matchmaking queue (ZSET)
--- KEYS[2] = matchmaking joinedAt (HASH)
-
--- ARGV[1] = userId
-
-local removed = redis.call("ZREM", KEYS[1], ARGV[1])
-
-if removed == 1 then
-    redis.call("HDEL", KEYS[2], ARGV[1])
-end
-
-return removed
-`;
-
-export {
-  matchmakingLuaScript,
-  reservationLuaScript,
-  cancelMatchmakingLuaScript,
-};
+export { matchmakingLuaScript, reservationLuaScript };
