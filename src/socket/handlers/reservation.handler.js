@@ -3,6 +3,7 @@ import redis from "../../config/redis.js";
 import { RESERVATION_TTL } from "../../constants/env.js";
 import { REDIS_KEYS } from "../../constants/keys.js";
 import { reservationLuaScript } from "../../constants/luaScript.js";
+import { TIME_CONTROL } from "../../constants/timeControl.js";
 import gameRepository from "../../modules/game/game.repository.js";
 
 const handleReservationAck = async (socket) => {
@@ -72,10 +73,25 @@ const handleReservationAck = async (socket) => {
 
       const black = white === player1 ? player2 : player1;
 
+      const timeControlSettings = TIME_CONTROL[timeControl];
+
+      if (!timeControlSettings) {
+        console.warn("[MATCH_ACK] invalid timeControl", {
+          reservationId,
+          timeControl,
+        });
+        return;
+      }
+
+      const whiteTimeLeft = timeControlSettings.initialTime;
+      const blackTimeLeft = timeControlSettings.initialTime;
+
       const game = await gameRepository.createGame({
         white,
         black,
         timeControl,
+        whiteTimeLeft,
+        blackTimeLeft,
       });
 
       // get sockets of both players

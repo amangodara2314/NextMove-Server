@@ -15,6 +15,7 @@ import { io } from "../../app.js";
 import reservationTimeoutQueue from "../../queues/reservationTimeout.queue.js";
 import { v4 as uuidv4 } from "uuid";
 import { TimeControl } from "@prisma/client";
+import { getTimeControl } from "../../constants/timeControl.js";
 
 const newGame = async (userId, timeControl) => {
   if (!userId) {
@@ -148,26 +149,7 @@ const newGame = async (userId, timeControl) => {
 };
 
 const getTimeControlSettings = () => {
-  const timeControls = Object.values(TimeControl);
-  const settings = {};
-  settings.types = [];
-
-  for (const timeControl of timeControls) {
-    const [type, base, increment] = timeControl.split("_");
-    const setting = {
-      title: increment === "0" ? `${base}m` : `${base}+${increment}`,
-      baseTime: base * 60 * 1000, // convert minutes to milliseconds
-      increment: increment * 1000, // convert seconds to milliseconds
-      timeControl,
-    };
-    if (!settings[type]) {
-      settings[type] = [];
-      settings.types.push(type);
-    }
-
-    settings[type].push(setting);
-  }
-  return settings;
+  return getTimeControl();
 };
 
 export default { newGame, getTimeControlSettings };
