@@ -85,14 +85,22 @@ const handleReservationAck = async (socket) => {
 
       const whiteTimeLeft = timeControlSettings.initialTime;
       const blackTimeLeft = timeControlSettings.initialTime;
-
-      const game = await gameRepository.createGame({
-        white,
-        black,
-        timeControl,
-        whiteTimeLeft,
-        blackTimeLeft,
-      });
+      let game;
+      try {
+        game = await gameRepository.createGame({
+          white,
+          black,
+          timeControl,
+          whiteTimeLeft,
+          blackTimeLeft,
+        });
+      } catch (error) {
+        console.log(
+          "Unable to create game after both players acknowledged:",
+          error,
+        );
+        return;
+      }
 
       // get sockets of both players
       const [p1Socket, p2Socket] = await Promise.all([

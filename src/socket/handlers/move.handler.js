@@ -5,7 +5,7 @@ import moveQueue from "../../queues/move.queue.js";
 import acquireLock from "../../utils/acquireLock.js";
 import releaseLock from "../../utils/releaseLock.js";
 import PIECE_MAP from "../../constants/pieces.js";
-import { GameStatus, PlayerColor } from "@prisma/client";
+import { GameResult, GameStatus, PlayerColor } from "@prisma/client";
 import { prepareDateForDb } from "../../utils/prepareDateForDb.js";
 import gameRepository from "../../modules/game/game.repository.js";
 import createMove from "../validations/move.validation.js";
@@ -73,6 +73,36 @@ const handleMoveEvents = async (socket) => {
         throw new Error("Illegal move.");
       }
 
+      // calculate how much time player took to make this move
+      // if the gameVersion is 0 then its the first move of the game
+      const now = Date.now();
+
+      const lastMoveAt =
+        game.version === 0
+          ? new Date(game.createdAt).getTime()
+          : new Date(game.lastMoveAt).getTime();
+
+      const timeTakenByPlayer = now - lastMoveAt;
+
+      // update players time in game state
+
+      if (game.turn === PlayerColor.WHITE) {
+        game.whiteTimeLeft = Math.max(
+          0,
+          game.whiteTimeLeft - timeTakenByPlayer,
+        );
+      } else {
+        game.blackTimeLeft = Math.max(
+          0,
+          game.blackTimeLeft - timeTakenByPlayer,
+        );
+      }
+
+      game.lastMoveAt = prepareDateForDb(new Date(now));
+
+      console.log(
+        `Player ${game.turn} made move ${from}-${to} in game ${gameId}. Time taken: ${timeTakenByPlayer}ms. Remaining time - White: ${game.whiteTimeLeft}ms, Black: ${game.blackTimeLeft}ms`,
+      );
       const move = generateMovePayload(
         game.version + 1,
         result,
@@ -88,10 +118,15 @@ const handleMoveEvents = async (socket) => {
 
       // Handle game-ending conditions
       if (move.isCheckmate) {
-        const dbResult = result.color === "w" ? "1-0" : "0-1";
+        const dbResult =
+          result.color === "w" ? GameResult.WHITE : GameResult.BLACK;
         await endGame(game, GameStatus.FINISHED, dbResult);
       } else if (move.isStalemate || chess.isDraw()) {
-        await endGame(game, GameStatus.FINISHED, "1/2-1/2");
+        await endGame(game, GameStatus.FINISHED, GameResult.DRAW);
+      } else if (game.whiteTimeLeft === 0) {
+        await endGame(game, GameStatus.TIMEOUT, GameResult.WHITE);
+      } else if (game.blackTimeLeft === 0) {
+        await endGame(game, GameStatus.TIMEOUT, GameResult.BLACK);
       }
 
       // Atomically store moves list and updated game
@@ -121,10 +156,7 @@ const handleMoveEvents = async (socket) => {
         fen: game.fen,
         version: game.version,
       };
-      if (
-        game.status === GameStatus.FINISHED ||
-        game.status === GameStatus.ABORTED
-      ) {
+      if (game.status !== GameStatus.ACTIVE) {
         response.gameOver = true;
         response.gameStatus = game.status;
         response.gameResult = game.result;
