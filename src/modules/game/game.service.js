@@ -6,6 +6,7 @@ import AppError from "../../utils/AppError.js";
 import { INITIAL_FEN } from "../../constants/game.js";
 import { io } from "../../app.js";
 import { updatePlayerConnection } from "../../utils/reconnection.js";
+import calculatePlayerTime from "../../utils/calculatePlayerTime.js";
 
 const getGame = async (gameId, userId) => {
   const key = REDIS_KEYS.game(gameId);
@@ -17,6 +18,8 @@ const getGame = async (gameId, userId) => {
     game.userColor = game.white === userId ? "WHITE" : "BLACK";
     // set the player status as active
     const updatedData = await updatePlayerConnection(game.userColor, gameId);
+
+    calculatePlayerTime(game, game.turn);
 
     game = { ...game, ...updatedData };
 
@@ -46,7 +49,7 @@ const getGame = async (gameId, userId) => {
       },
     },
   };
-  const dbGame = await gameRepository.findGame(gameId, query);
+  let dbGame = await gameRepository.findGame(gameId, query);
 
   if (!dbGame) {
     throw new AppError("Game not found");
@@ -74,6 +77,8 @@ const getGame = async (gameId, userId) => {
 
   // set userColor property for frontend
   dbGame.userColor = userColor;
+  calculatePlayerTime(dbGame, dbGame.turn);
+
   return { game: dbGame };
 };
 

@@ -12,6 +12,9 @@ const endGame = async (game, status, dbResult, abortedBy) => {
     result: game.result,
     turn: game.turn,
     abortedBy,
+    whiteTimeLeft: parseInt(game.whiteTimeLeft),
+    blackTimeLeft: parseInt(game.blackTimeLeft),
+    lastMoveAt: game.lastMoveAt,
   });
   await Promise.all([
     redis.del(REDIS_KEYS.userActiveGame(game.white)),

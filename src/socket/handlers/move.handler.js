@@ -11,6 +11,7 @@ import gameRepository from "../../modules/game/game.repository.js";
 import createMove from "../validations/move.validation.js";
 import { io } from "../../app.js";
 import { endGame, generateMovePayload, isPromotion } from "../../utils/game.js";
+import calculatePlayerTime from "../../utils/calculatePlayerTime.js";
 
 const handleMoveEvents = async (socket) => {
   socket.on("MAKE_MOVE", async (data, callback) => {
@@ -77,26 +78,7 @@ const handleMoveEvents = async (socket) => {
       // if the gameVersion is 0 then its the first move of the game
       const now = Date.now();
 
-      const lastMoveAt =
-        game.version === 0
-          ? new Date(game.createdAt).getTime()
-          : new Date(game.lastMoveAt).getTime();
-
-      const timeTakenByPlayer = now - lastMoveAt;
-
-      // update players time in game state
-
-      if (game.turn === PlayerColor.WHITE) {
-        game.whiteTimeLeft = Math.max(
-          0,
-          game.whiteTimeLeft - timeTakenByPlayer,
-        );
-      } else {
-        game.blackTimeLeft = Math.max(
-          0,
-          game.blackTimeLeft - timeTakenByPlayer,
-        );
-      }
+      calculatePlayerTime(game, game.turn, now);
 
       game.lastMoveAt = prepareDateForDb(new Date(now));
 
@@ -141,16 +123,11 @@ const handleMoveEvents = async (socket) => {
         .rpush(movesKey, JSON.stringify(move))
         .hset(gameKey, serializedGame)
         .exec();
-
-      // Queue DB write
-      await moveQueue.add("move", { ...move, gameId });
-
-      // Broadcast to opponent
-      io.to(gameId).emit("MOVE_MADE", {
-        move,
-        fen: game.fen,
-        version: game.version,
-      });
+      const updateGame = {
+        whiteTimeLeft: game.whiteTimeLeft,
+        blackTimeLeft: game.blackTimeLeft,
+        lastMoveAt: game.lastMoveAt,
+      };
       const response = {
         move,
         fen: game.fen,
@@ -162,6 +139,20 @@ const handleMoveEvents = async (socket) => {
         response.gameResult = game.result;
       }
       callback?.({ success: true, ...response });
+      // Broadcast to opponent
+      io.to(gameId).emit("MOVE_MADE", {
+        move,
+        fen: game.fen,
+        version: game.version,
+        whiteTimeLeft: game.whiteTimeLeft,
+        blackTimeLeft: game.blackTimeLeft,
+      });
+      // Queue DB write
+
+      await moveQueue.add("move", {
+        move: { ...move, gameId },
+        updateGame: GameStatus.ACTIVE === game.status ? updateGame : null,
+      });
     } catch (error) {
       console.error("error in move handler", error);
       callback?.({
