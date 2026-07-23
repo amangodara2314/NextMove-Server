@@ -5,7 +5,7 @@ import redis from "../config/redis.js";
 const queueOptions = {
   connection: redis,
   streams: {
-    maxLenEvents: 0, // STOPS the expensive XTRIM writes seen in your logs
+    maxLenEvents: 0,
   },
   defaultJobOptions: {
     attempts: 3,

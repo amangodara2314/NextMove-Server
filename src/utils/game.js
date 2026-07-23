@@ -4,9 +4,9 @@ import PIECE_MAP from "../constants/pieces.js";
 import gameRepository from "../modules/game/game.repository.js";
 import { prepareDateForDb } from "./prepareDateForDb.js";
 
-const endGame = async (game, status, dbResult, abortedBy) => {
+const endGame = async (game, status, result, abortedBy) => {
   game.status = status;
-  game.result = dbResult;
+  game.result = result;
   const updateGame = await gameRepository.updateGame(game.id, {
     status: status,
     result: game.result,
@@ -20,6 +20,7 @@ const endGame = async (game, status, dbResult, abortedBy) => {
     redis.del(REDIS_KEYS.userActiveGame(game.white)),
     redis.del(REDIS_KEYS.userActiveGame(game.black)),
   ]);
+  return updateGame;
 };
 
 const isPromotion = (from, to, chess) => {

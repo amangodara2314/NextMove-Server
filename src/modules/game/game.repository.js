@@ -81,8 +81,6 @@ const getRedisGame = async (gameId) => {
   return {
     ...game,
     version: Number(game.version),
-    whiteTime: Number(game.whiteTime),
-    blackTime: Number(game.blackTime),
     whiteConnected: game.whiteConnected === "true",
     blackConnected: game.blackConnected === "true",
     whitePlayer: game.whitePlayer ? JSON.parse(game.whitePlayer) : null,
