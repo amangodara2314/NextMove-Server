@@ -1,71 +1,74 @@
 import { GameResult, GameStatus, PlayerColor } from "@prisma/client";
 import gameRepository from "../modules/game/game.repository.js";
 import calculatePlayerTime from "../utils/calculatePlayerTime.js";
-import playerTimeoutQueue from "../queues/playerTimeoutQueue.js";
 import { endGame } from "../utils/game.js";
 import { notify } from "../utils/notifier.js";
+import { REDIS_KEYS } from "../constants/keys.js";
+import acquireLock from "../utils/acquireLock.js";
+import releaseLock from "../utils/releaseLock.js";
 
 const handlePlayerTimeoutJob = async (job) => {
+  const { gameId, turn } = job.data;
+
+  if (!gameId || !Object.values(PlayerColor).includes(turn)) {
+    console.log("Invalid timeout job payload");
+    return;
+  }
+
+  const lockKey = REDIS_KEYS.lock("game", gameId);
+  const acquired = await acquireLock(lockKey, 5);
+
+  if (!acquired) {
+    // The move handler is already updating the game.
+    return;
+  }
+
   try {
-    const { gameId, turn } = job.data;
-
-    // validations
-    if (!gameId || !Object.values(PlayerColor).includes(turn)) {
-      throw new Error("Missing gameId or invalid turn in job data");
-    }
-
-    let game = await gameRepository.getRedisGame(gameId);
+    const game = await gameRepository.getRedisGame(gameId);
 
     if (!game) {
-      throw new Error(`Game with id:${gameId} does not exist`);
-    }
-
-    if (game.status !== GameStatus.ACTIVE) {
-      throw new Error(
-        `Game with id:${gameId} is not active, current status : ${game.status}`,
-      );
-    }
-
-    if (game.turn !== turn) {
-      throw new Error(
-        `Game with id:${gameId} does not match the turn in the payload`,
-      );
-    }
-
-    // calculate the players time
-    calculatePlayerTime(game, turn);
-
-    const isWhite = turn === PlayerColor.WHITE;
-
-    const playerTime = isWhite
-      ? parseInt(game.whiteTimeLeft)
-      : parseInt(game.blackTimeLeft);
-
-    // if the player still has time left then again add the job in the queue and return
-    if (playerTime !== 0) {
-      await playerTimeoutQueue.add(
-        "player-timeout",
-        { gameId, turn },
-        { jobId: `clock:${gameId}`, delay: playerTime + 100 },
-      );
       return;
     }
 
-    // else end the game and notify both players
-    const updatedGame = await endGame(
-      game,
-      GameStatus.TIMEOUT,
-      isWhite ? GameResult.BLACK : GameResult.BLACK,
-    );
+    if (game.status !== GameStatus.ACTIVE) {
+      return;
+    }
+
+    // Stale timeout job.
+    if (game.turn !== turn) {
+      return;
+    }
+
+    // Update remaining time using the current timestamp.
+    calculatePlayerTime(game, turn);
+
+    const remainingTime =
+      turn === PlayerColor.WHITE
+        ? Number(game.whiteTimeLeft)
+        : Number(game.blackTimeLeft);
+
+    // Player still has time remaining.
+    if (remainingTime > 0) {
+      return;
+    }
+
+    const winner =
+      turn === PlayerColor.WHITE ? GameResult.BLACK : GameResult.WHITE;
+
+    const updatedGame = await endGame(game, GameStatus.TIMEOUT, winner);
 
     notify({
       event: "PLAYER_TIMEOUT",
       room: gameId,
-      payload: { game: updatedGame },
+      payload: {
+        game: updatedGame,
+      },
     });
-  } catch (error) {
-    console.log("Error while processing player timeout job :", error);
-    throw error;
+  } catch (err) {
+    console.error("Player timeout worker failed:", err);
+    throw err;
+  } finally {
+    await releaseLock(lockKey, acquired);
   }
 };
 

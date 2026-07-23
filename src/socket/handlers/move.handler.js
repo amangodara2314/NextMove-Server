@@ -12,6 +12,7 @@ import createMove from "../validations/move.validation.js";
 import { io } from "../../app.js";
 import { endGame, generateMovePayload, isPromotion } from "../../utils/game.js";
 import calculatePlayerTime from "../../utils/calculatePlayerTime.js";
+import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
 
 const handleMoveEvents = async (socket) => {
   socket.on("MAKE_MOVE", async (data, callback) => {
@@ -83,7 +84,7 @@ const handleMoveEvents = async (socket) => {
       game.lastMoveAt = prepareDateForDb(new Date(now));
 
       console.log(
-        `Player ${game.turn} made move ${from}-${to} in game ${gameId}. Time taken: ${timeTakenByPlayer}ms. Remaining time - White: ${game.whiteTimeLeft}ms, Black: ${game.blackTimeLeft}ms`,
+        `Player ${game.turn} made move ${from}-${to} in game ${gameId}. Remaining time - White: ${game.whiteTimeLeft}ms, Black: ${game.blackTimeLeft}ms`,
       );
       const move = generateMovePayload(
         game.version + 1,
@@ -106,9 +107,9 @@ const handleMoveEvents = async (socket) => {
       } else if (move.isStalemate || chess.isDraw()) {
         await endGame(game, GameStatus.FINISHED, GameResult.DRAW);
       } else if (game.whiteTimeLeft === 0) {
-        await endGame(game, GameStatus.TIMEOUT, GameResult.WHITE);
-      } else if (game.blackTimeLeft === 0) {
         await endGame(game, GameStatus.TIMEOUT, GameResult.BLACK);
+      } else if (game.blackTimeLeft === 0) {
+        await endGame(game, GameStatus.TIMEOUT, GameResult.WHITE);
       }
 
       // Atomically store moves list and updated game
@@ -147,12 +148,28 @@ const handleMoveEvents = async (socket) => {
         whiteTimeLeft: game.whiteTimeLeft,
         blackTimeLeft: game.blackTimeLeft,
       });
-      // Queue DB write
+      // remove the old player timeout job and add a new one
+      const jobId = `clock:${gameId}`;
+      await playerTimeoutQueue.remove(jobId);
 
-      await moveQueue.add("move", {
-        move: { ...move, gameId },
-        updateGame: GameStatus.ACTIVE === game.status ? updateGame : null,
-      });
+      await Promise.all([
+        playerTimeoutQueue.add(
+          "player-timeout",
+          { gameId, turn: game.turn },
+          {
+            jobId,
+            delay:
+              (game.turn == PlayerColor.WHITE
+                ? game.whiteTimeLeft
+                : game.blackTimeLeft) + 100,
+          },
+        ),
+
+        moveQueue.add("move", {
+          move: { ...move, gameId },
+          updateGame: GameStatus.ACTIVE === game.status ? updateGame : null,
+        }),
+      ]);
     } catch (error) {
       console.error("error in move handler", error);
       callback?.({
