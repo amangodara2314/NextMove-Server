@@ -6,6 +6,7 @@ import { notify } from "../utils/notifier.js";
 import { REDIS_KEYS } from "../constants/keys.js";
 import acquireLock from "../utils/acquireLock.js";
 import releaseLock from "../utils/releaseLock.js";
+import redis from "../config/redis.js";
 
 const handlePlayerTimeoutJob = async (job) => {
   const { gameId, turn } = job.data;
@@ -64,6 +65,26 @@ const handlePlayerTimeoutJob = async (job) => {
         game: updatedGame,
       },
     });
+
+    console.log("Cleaning up Redis keys for game", gameId);
+
+    // redis cleanup
+    const player1 = REDIS_KEYS.userActiveGame(game.white);
+    const player2 = REDIS_KEYS.userActiveGame(game.black);
+    const activeGameKey = REDIS_KEYS.userActiveGame(gameId);
+    const movesKey = REDIS_KEYS.gameMoves(gameId);
+    const gameKey = REDIS_KEYS.game(gameId);
+    await Promise.all([
+      redis.del(activeGameKey),
+      redis.del(player1),
+      redis.del(player2),
+      redis.del(gameKey),
+      redis.del(movesKey),
+    ]);
+
+    console.log(
+      `Game ${gameId} ended due to player timeout. Winner: ${winner}`,
+    );
   } catch (err) {
     console.error("Player timeout worker failed:", err);
     throw err;

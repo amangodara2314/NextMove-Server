@@ -3,5 +3,6 @@ import matchmakingTimeoutWorker from "./matchmakingTimeout.worker.js";
 import reservationTimeoutWorker from "./reservationTimeout.worker.js";
 import moveWorker from "./move.worker.js";
 import reconnectionTimeoutWorker from "./reconnectionTimeout.worker.js";
+import playerTimeoutWorker from "./playerTimeout.worker.js";
 
 console.log("Workers started");

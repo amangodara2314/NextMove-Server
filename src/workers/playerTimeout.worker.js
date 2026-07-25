@@ -1,6 +1,6 @@
 import { Worker } from "bullmq";
-import redis from "../config/redis";
-import handlePlayerTimeoutJob from "../jobs/playerTimeout.job";
+import redis from "../config/redis.js";
+import handlePlayerTimeoutJob from "../jobs/playerTimeout.job.js";
 
 const playerTimeoutWorker = new Worker(
   "player-timeout",

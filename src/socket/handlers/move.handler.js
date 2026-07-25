@@ -106,9 +106,9 @@ const handleMoveEvents = async (socket) => {
         await endGame(game, GameStatus.FINISHED, dbResult);
       } else if (move.isStalemate || chess.isDraw()) {
         await endGame(game, GameStatus.FINISHED, GameResult.DRAW);
-      } else if (game.whiteTimeLeft === 0) {
+      } else if (game.whiteTimeLeft == 0) {
         await endGame(game, GameStatus.TIMEOUT, GameResult.BLACK);
-      } else if (game.blackTimeLeft === 0) {
+      } else if (game.blackTimeLeft == 0) {
         await endGame(game, GameStatus.TIMEOUT, GameResult.WHITE);
       }
 
@@ -125,8 +125,8 @@ const handleMoveEvents = async (socket) => {
         .hset(gameKey, serializedGame)
         .exec();
       const updateGame = {
-        whiteTimeLeft: game.whiteTimeLeft,
-        blackTimeLeft: game.blackTimeLeft,
+        whiteTimeLeft: Number(game.whiteTimeLeft),
+        blackTimeLeft: Number(game.blackTimeLeft),
         lastMoveAt: game.lastMoveAt,
       };
       const response = {
@@ -149,7 +149,7 @@ const handleMoveEvents = async (socket) => {
         blackTimeLeft: game.blackTimeLeft,
       });
       // remove the old player timeout job and add a new one
-      const jobId = `clock:${gameId}`;
+      const jobId = `clock_${gameId}`;
       await playerTimeoutQueue.remove(jobId);
 
       await Promise.all([

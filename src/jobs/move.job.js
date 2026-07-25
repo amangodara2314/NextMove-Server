@@ -4,6 +4,7 @@ const handleMoveJob = async (job) => {
   const { move, updateGame } = job.data;
 
   const result = await gameRepository.createMove(move);
+
   if (updateGame) {
     await gameRepository.updateGame(move.gameId, updateGame);
   }

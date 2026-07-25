@@ -5,6 +5,7 @@ import { REDIS_KEYS } from "../../constants/keys.js";
 import { reservationLuaScript } from "../../constants/luaScript.js";
 import { TIME_CONTROL } from "../../constants/timeControl.js";
 import gameRepository from "../../modules/game/game.repository.js";
+import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
 
 const handleReservationAck = async (socket) => {
   socket.on("MATCH_ACK", async (data) => {
@@ -108,10 +109,21 @@ const handleReservationAck = async (socket) => {
         redis.get(REDIS_KEYS.userSocket(player2)),
       ]);
 
-      // set both players active game in redis
+      // set both players active game in redis and add the job to the player timeout queue
       await Promise.all([
         redis.set(REDIS_KEYS.userActiveGame(player1), game.id),
         redis.set(REDIS_KEYS.userActiveGame(player2), game.id),
+        playerTimeoutQueue.add(
+          "player-timeout",
+          {
+            gameId: game.id,
+            turn: game.turn,
+          },
+          {
+            jobId: `clock_${game.id}`,
+            delay: whiteTimeLeft + 50,
+          },
+        ),
       ]);
 
       // notify both players that the match is ready with gameId
