@@ -21,4 +21,11 @@ const getMoves = async (req, res) => {
   return successResponse(res, 200, result, "Moves found");
 };
 
-export default { getGame, getMoves };
+const checkPlayerTimeout = async (req, res) => {
+  const { gameId } = req.params;
+  const userId = req.user.userId;
+  const result = await gameService.checkPlayerTimeout(gameId, userId);
+  return successResponse(res, 200, result, "Player timeout checked");
+};
+
+export default { getGame, getMoves, checkPlayerTimeout };

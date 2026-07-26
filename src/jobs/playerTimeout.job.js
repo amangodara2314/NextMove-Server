@@ -61,9 +61,7 @@ const handlePlayerTimeoutJob = async (job) => {
     notify({
       event: "PLAYER_TIMEOUT",
       room: gameId,
-      payload: {
-        game: updatedGame,
-      },
+      payload: updatedGame,
     });
 
     console.log("Cleaning up Redis keys for game", gameId);

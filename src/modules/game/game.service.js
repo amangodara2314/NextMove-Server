@@ -158,4 +158,51 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
   };
 };
 
-export default { getGame, getMoves };
+const checkPlayerTimeout = async (gameId) => {
+  // Check if the game exists in Redis
+  let game = await gameRepository.getRedisGame(gameId);
+
+  // If not found in Redis, check the database
+  if (!game) {
+    game = await gameRepository.findGameById(gameId);
+  }
+
+  if (!game) {
+    throw new AppError("Game not found.", 404);
+  }
+
+  if (game.status !== GameStatus.ACTIVE) {
+    return { status: game.status };
+  }
+  // check if any of the players have timed out
+  calculatePlayerTime(game, game.turn);
+
+  if (game.whiteTime <= 0 || game.blackTime <= 0) {
+    // update the game status to TIMEOUT and set the winner
+    const winner = game.whiteTime <= 0 ? "BLACK" : "WHITE";
+    game = await gameRepository.updateGame(gameId, {
+      status: GameStatus.TIMEOUT,
+      winner,
+    });
+
+    // clean up redis keys
+    const player1 = REDIS_KEYS.userActiveGame(game.white);
+    const player2 = REDIS_KEYS.userActiveGame(game.black);
+    const activeGameKey = REDIS_KEYS.userActiveGame(gameId);
+    const movesKey = REDIS_KEYS.gameMoves(gameId);
+    const gameKey = REDIS_KEYS.game(gameId);
+    await Promise.all([
+      redis.del(activeGameKey),
+      redis.del(player1),
+      redis.del(player2),
+      redis.del(gameKey),
+      redis.del(movesKey),
+    ]);
+
+    io.to(gameId).emit("PLAYER_TIMEOUT", game);
+  }
+
+  return { status: game.status, winner: game.winner || null };
+};
+
+export default { getGame, getMoves, checkPlayerTimeout };
