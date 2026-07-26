@@ -121,7 +121,7 @@ const handleReservationAck = async (socket) => {
           },
           {
             jobId: `clock_${game.id}`,
-            delay: whiteTimeLeft + 50,
+            delay: whiteTimeLeft + 10,
           },
         ),
       ]);

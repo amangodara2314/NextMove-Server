@@ -10,9 +10,10 @@ import { prepareDateForDb } from "../../utils/prepareDateForDb.js";
 import gameRepository from "../../modules/game/game.repository.js";
 import createMove from "../validations/move.validation.js";
 import { io } from "../../app.js";
-import { endGame, generateMovePayload, isPromotion } from "../../utils/game.js";
+import { cleanUpRedisKeys, endGame } from "../../utils/game.js";
 import calculatePlayerTime from "../../utils/calculatePlayerTime.js";
 import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
+import { generateMovePayload, isPromotion } from "../../utils/move.js";
 
 const handleMoveEvents = async (socket) => {
   socket.on("MAKE_MOVE", async (data, callback) => {
@@ -39,7 +40,7 @@ const handleMoveEvents = async (socket) => {
     try {
       // Fetch the current game state from Redis
       const gameKey = REDIS_KEYS.game(gameId);
-      const game = await gameRepository.getRedisGame(gameId);
+      let game = await gameRepository.getRedisGame(gameId);
 
       if (!game) {
         throw new Error("Game state not found.");
@@ -100,46 +101,46 @@ const handleMoveEvents = async (socket) => {
       game.turn = result.color === "w" ? PlayerColor.BLACK : PlayerColor.WHITE; // next player's turn
 
       // Handle game-ending conditions
+      let finishedGame;
       if (move.isCheckmate) {
         const dbResult =
           result.color === "w" ? GameResult.WHITE : GameResult.BLACK;
-        await endGame(game, GameStatus.FINISHED, dbResult);
+        finishedGame = await endGame(game, GameStatus.FINISHED, dbResult);
       } else if (move.isStalemate || chess.isDraw()) {
-        await endGame(game, GameStatus.FINISHED, GameResult.DRAW);
+        finishedGame = await endGame(
+          game,
+          GameStatus.FINISHED,
+          GameResult.DRAW,
+        );
       } else if (game.whiteTimeLeft == 0) {
-        await endGame(game, GameStatus.TIMEOUT, GameResult.BLACK);
+        finishedGame = await endGame(
+          game,
+          GameStatus.TIMEOUT,
+          GameResult.BLACK,
+        );
       } else if (game.blackTimeLeft == 0) {
-        await endGame(game, GameStatus.TIMEOUT, GameResult.WHITE);
+        finishedGame = await endGame(
+          game,
+          GameStatus.TIMEOUT,
+          GameResult.WHITE,
+        );
       }
 
+      game = { ...game, ...(finishedGame || {}) }; // merge the result if game ended
+
       // Atomically store moves list and updated game
-      const serializedGame = {
-        ...game,
-        whitePlayer: JSON.stringify(game.whitePlayer),
-        blackPlayer: JSON.stringify(game.blackPlayer),
-      };
-      const movesKey = REDIS_KEYS.gameMoves(gameId);
-      await redis
-        .multi()
-        .rpush(movesKey, JSON.stringify(move))
-        .hset(gameKey, serializedGame)
-        .exec();
-      const updateGame = {
-        whiteTimeLeft: Number(game.whiteTimeLeft),
-        blackTimeLeft: Number(game.blackTimeLeft),
-        lastMoveAt: game.lastMoveAt,
-      };
       const response = {
         move,
         fen: game.fen,
         version: game.version,
       };
-      if (game.status !== GameStatus.ACTIVE) {
-        response.gameOver = true;
-        response.gameStatus = game.status;
-        response.gameResult = game.result;
-      }
-      callback?.({ success: true, ...response });
+      const movesKey = REDIS_KEYS.gameMoves(gameId);
+      await redis
+        .multi()
+        .rpush(movesKey, JSON.stringify(move))
+        .hset(gameKey, game)
+        .exec();
+
       // Broadcast to opponent
       io.to(gameId).emit("MOVE_MADE", {
         move,
@@ -148,28 +149,53 @@ const handleMoveEvents = async (socket) => {
         whiteTimeLeft: game.whiteTimeLeft,
         blackTimeLeft: game.blackTimeLeft,
       });
-      // remove the old player timeout job and add a new one
+      if (game.status !== GameStatus.ACTIVE) {
+        response.gameOver = true;
+        response.gameStatus = game.status;
+        response.gameResult = game.result;
+      }
+      const updateGame = {
+        whiteTimeLeft: Number(game.whiteTimeLeft),
+        blackTimeLeft: Number(game.blackTimeLeft),
+        lastMoveAt: game.lastMoveAt,
+      };
+      const promises = [
+        moveQueue.add("move", {
+          move: { ...move, gameId },
+          updateGame:
+            game.status === GameStatus.ACTIVE ? updateGame : undefined,
+          shouldCleanUpRedis: game.status !== GameStatus.ACTIVE,
+          cleanUpData:
+            game.status !== GameStatus.ACTIVE
+              ? { gameId, white: game.white, black: game.black }
+              : undefined,
+        }),
+      ];
+
+      // remove the old player timeout job and add a new one if the game is active
       const jobId = `clock_${gameId}`;
       await playerTimeoutQueue.remove(jobId);
 
-      await Promise.all([
-        playerTimeoutQueue.add(
-          "player-timeout",
-          { gameId, turn: game.turn },
-          {
-            jobId,
-            delay:
-              (game.turn == PlayerColor.WHITE
-                ? game.whiteTimeLeft
-                : game.blackTimeLeft) + 100,
-          },
-        ),
+      if (game.status === GameStatus.ACTIVE) {
+        promises.push(
+          playerTimeoutQueue.add(
+            "player-timeout",
+            { gameId, turn: game.turn },
+            {
+              jobId,
+              delay:
+                (game.turn == PlayerColor.WHITE
+                  ? game.whiteTimeLeft
+                  : game.blackTimeLeft) + 10,
+            },
+          ),
+        );
+      }
 
-        moveQueue.add("move", {
-          move: { ...move, gameId },
-          updateGame: GameStatus.ACTIVE === game.status ? updateGame : null,
-        }),
-      ]);
+      if (game.status !== GameStatus.TIMEOUT) {
+        await Promise.all(promises);
+      }
+      callback?.({ success: true, ...response });
     } catch (error) {
       console.error("error in move handler", error);
       callback?.({

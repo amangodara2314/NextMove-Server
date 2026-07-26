@@ -32,6 +32,9 @@ const handlePlayerTimeoutJob = async (job) => {
     }
 
     if (game.status !== GameStatus.ACTIVE) {
+      console.log(
+        `Game ${gameId} is not active. Current status: ${game.status}`,
+      );
       return;
     }
 
@@ -69,11 +72,9 @@ const handlePlayerTimeoutJob = async (job) => {
     // redis cleanup
     const player1 = REDIS_KEYS.userActiveGame(game.white);
     const player2 = REDIS_KEYS.userActiveGame(game.black);
-    const activeGameKey = REDIS_KEYS.userActiveGame(gameId);
     const movesKey = REDIS_KEYS.gameMoves(gameId);
     const gameKey = REDIS_KEYS.game(gameId);
     await Promise.all([
-      redis.del(activeGameKey),
       redis.del(player1),
       redis.del(player2),
       redis.del(gameKey),

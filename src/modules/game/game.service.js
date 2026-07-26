@@ -7,6 +7,9 @@ import { INITIAL_FEN } from "../../constants/game.js";
 import { io } from "../../app.js";
 import { updatePlayerConnection } from "../../utils/reconnection.js";
 import calculatePlayerTime from "../../utils/calculatePlayerTime.js";
+import acquireLock from "../../utils/acquireLock.js";
+import releaseLock from "../../utils/releaseLock.js";
+import { endGame } from "../../utils/game.js";
 
 const getGame = async (gameId, userId) => {
   const key = REDIS_KEYS.game(gameId);
@@ -84,10 +87,12 @@ const getGame = async (gameId, userId) => {
 
 const getMoves = async (gameId, cursor = null, take = 20) => {
   let game = await gameRepository.getRedisGame(gameId);
+  let source = "redis";
 
   // fallback to DB
   if (!game) {
     game = await gameRepository.findGameById(gameId);
+    source = "db";
   }
 
   if (!game) {
@@ -98,9 +103,9 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
 
   let moves = [];
 
-  // ACTIVE game use Redis
+  // use redis if moves are cached, otherwise use db
   const parsedCursor = cursor ? parseInt(cursor, 10) : null;
-  if (game.status === "ACTIVE") {
+  if (source === "redis") {
     const totalMoves = game.version;
 
     let start;
@@ -126,7 +131,7 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
       moves,
       nextCursor,
       hasMore: start > 0,
-      source: "redis",
+      source,
     };
   }
 
@@ -154,7 +159,7 @@ const getMoves = async (gameId, cursor = null, take = 20) => {
     moves: dbMoves,
     nextCursor: dbMoves.length > 0 ? dbMoves[0].moveNumber : null,
     hasMore: dbMoves.length === take,
-    source: "db",
+    source,
   };
 };
 
@@ -176,32 +181,54 @@ const checkPlayerTimeout = async (gameId) => {
   }
   // check if any of the players have timed out
   calculatePlayerTime(game, game.turn);
-
+  console.log(
+    `Checking player timeout for game ${gameId}: White time left: ${game.whiteTimeLeft}, Black time left: ${game.blackTimeLeft}`,
+  );
   if (game.whiteTime <= 0 || game.blackTime <= 0) {
-    // update the game status to TIMEOUT and set the winner
-    const winner = game.whiteTime <= 0 ? "BLACK" : "WHITE";
-    game = await gameRepository.updateGame(gameId, {
-      status: GameStatus.TIMEOUT,
-      winner,
-    });
+    let lockKey = REDIS_KEYS.playerTimeoutLock(gameId);
+    let acquiredLock;
+    try {
+      acquiredLock = await acquireLock(lockKey, 5000); // 5 seconds lock
+      if (!acquiredLock) {
+        console.log(
+          `Could not acquire lock for game ${gameId}. Another process is handling the timeout.`,
+        );
+        return { status: game.status };
+      }
+      // update the game status to TIMEOUT and set the winner
+      const winner = game.whiteTime <= 0 ? "BLACK" : "WHITE";
+      game = await endGame(game, GameStatus.TIMEOUT, winner);
 
-    // clean up redis keys
-    const player1 = REDIS_KEYS.userActiveGame(game.white);
-    const player2 = REDIS_KEYS.userActiveGame(game.black);
-    const activeGameKey = REDIS_KEYS.userActiveGame(gameId);
-    const movesKey = REDIS_KEYS.gameMoves(gameId);
-    const gameKey = REDIS_KEYS.game(gameId);
-    await Promise.all([
-      redis.del(activeGameKey),
-      redis.del(player1),
-      redis.del(player2),
-      redis.del(gameKey),
-      redis.del(movesKey),
-    ]);
+      // clean up redis keys
+      const player1 = REDIS_KEYS.userActiveGame(game.white);
+      const player2 = REDIS_KEYS.userActiveGame(game.black);
+      const activeGameKey = REDIS_KEYS.userActiveGame(gameId);
+      const movesKey = REDIS_KEYS.gameMoves(gameId);
+      const gameKey = REDIS_KEYS.game(gameId);
+      await Promise.all([
+        redis.del(activeGameKey),
+        redis.del(player1),
+        redis.del(player2),
+        redis.del(gameKey),
+        redis.del(movesKey),
+      ]);
+    } catch (error) {
+      console.error(
+        `Error while handling player timeout for game ${gameId}:`,
+        error,
+      );
+    } finally {
+      // Release the lock
+      if (acquiredLock) {
+        await releaseLock(lockKey, acquiredLock);
+      }
+    }
 
     io.to(gameId).emit("PLAYER_TIMEOUT", game);
   }
-
+  console.log(
+    `Player timeout check completed for game ${gameId}: Status: ${game.status}, Winner: ${game.winner}`,
+  );
   return { status: game.status, winner: game.winner || null };
 };
 

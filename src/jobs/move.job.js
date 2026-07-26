@@ -1,12 +1,18 @@
 import gameRepository from "../modules/game/game.repository.js";
+import { cleanUpRedisKeys } from "../utils/game.js";
 
 const handleMoveJob = async (job) => {
-  const { move, updateGame } = job.data;
+  const { move, updateGame, shouldCleanUpRedis, cleanUpData } = job.data;
 
   const result = await gameRepository.createMove(move);
 
   if (updateGame) {
     await gameRepository.updateGame(move.gameId, updateGame);
+  }
+
+  if (shouldCleanUpRedis && cleanUpData) {
+    const { gameId, white, black } = cleanUpData;
+    await cleanUpRedisKeys(gameId, white, black);
   }
 
   console.log(
