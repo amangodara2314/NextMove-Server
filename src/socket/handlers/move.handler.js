@@ -133,22 +133,27 @@ const handleMoveEvents = async (socket) => {
         move,
         fen: game.fen,
         version: game.version,
+        whiteTimeLeft: game.whiteTimeLeft,
+        blackTimeLeft: game.blackTimeLeft,
+      };
+      const serializedGame = {
+        ...game,
+        whitePlayer: JSON.stringify(game?.whitePlayer),
+        blackPlayer: JSON.stringify(game?.blackPlayer),
       };
       const movesKey = REDIS_KEYS.gameMoves(gameId);
       await redis
         .multi()
         .rpush(movesKey, JSON.stringify(move))
-        .hset(gameKey, game)
+        .hset(gameKey, serializedGame)
         .exec();
 
       // Broadcast to opponent
-      io.to(gameId).emit("MOVE_MADE", {
-        move,
-        fen: game.fen,
-        version: game.version,
-        whiteTimeLeft: game.whiteTimeLeft,
-        blackTimeLeft: game.blackTimeLeft,
-      });
+      if (game.status === GameStatus.TIMEOUT) {
+        io.to(gameId).emit("PLAYER_TIMEOUT", finishedGame);
+      } else {
+        io.to(gameId).emit("MOVE_MADE", response);
+      }
       if (game.status !== GameStatus.ACTIVE) {
         response.gameOver = true;
         response.gameStatus = game.status;
