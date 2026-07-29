@@ -1,7 +1,6 @@
 import { GameResult, GameStatus, PlayerColor } from "@prisma/client";
 import gameRepository from "../modules/game/game.repository.js";
 import calculatePlayerTime from "../utils/calculatePlayerTime.js";
-import { endGame } from "../utils/game.js";
 import { notify } from "../utils/notifier.js";
 import { REDIS_KEYS } from "../constants/keys.js";
 import acquireLock from "../utils/acquireLock.js";
@@ -59,7 +58,11 @@ const handlePlayerTimeoutJob = async (job) => {
     const winner =
       turn === PlayerColor.WHITE ? GameResult.BLACK : GameResult.WHITE;
 
-    const updatedGame = await endGame(game, GameStatus.TIMEOUT, winner);
+    const updatedGame = await gameRepository.finishGame(
+      game,
+      GameStatus.TIMEOUT,
+      winner,
+    );
 
     notify({
       event: "PLAYER_TIMEOUT",
@@ -70,16 +73,7 @@ const handlePlayerTimeoutJob = async (job) => {
     console.log("Cleaning up Redis keys for game", gameId);
 
     // redis cleanup
-    const player1 = REDIS_KEYS.userActiveGame(game.white);
-    const player2 = REDIS_KEYS.userActiveGame(game.black);
-    const movesKey = REDIS_KEYS.gameMoves(gameId);
-    const gameKey = REDIS_KEYS.game(gameId);
-    await Promise.all([
-      redis.del(player1),
-      redis.del(player2),
-      redis.del(gameKey),
-      redis.del(movesKey),
-    ]);
+    await gameRepository.cleanUpRedisKeys(gameId, game.white, game.black);
 
     console.log(
       `Game ${gameId} ended due to player timeout. Winner: ${winner}`,

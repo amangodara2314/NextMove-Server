@@ -1,7 +1,6 @@
 import { GameStatus } from "@prisma/client";
 import { REDIS_KEYS } from "../constants/keys.js";
 import redis from "../config/redis.js";
-import { endGame } from "../utils/game.js";
 import { io } from "../app.js";
 import gameRepository from "../modules/game/game.repository.js";
 import { notify } from "../utils/notifier.js";
@@ -50,7 +49,7 @@ const reconnectionTimeoutJob = async (job) => {
     `User ${userId} has not reconnected within the timeout. Handling disconnection for game ${gameId}.`,
   );
 
-  await endGame(
+  await gameRepository.finishGame(
     game,
     GameStatus.ABORTED,
     userColor === "WHITE" ? "0-1" : "1-0",
@@ -78,18 +77,7 @@ const reconnectionTimeoutJob = async (job) => {
   });
 
   // redis cleanup
-  const opponentActiveKey = REDIS_KEYS.userActiveGame(
-    game.white === userId ? game.black : game.white,
-  );
-
-  const movesKey = REDIS_KEYS.gameMoves(gameId);
-  const gameKey = REDIS_KEYS.game(gameId);
-  await Promise.all([
-    redis.del(activeGameKey),
-    redis.del(opponentActiveKey),
-    redis.del(gameKey),
-    redis.del(movesKey),
-  ]);
+  await gameRepository.cleanUpRedisKeys(gameId, game.white, game.black);
 
   console.log("Game aborted and Redis cleaned up for game", gameId);
 };

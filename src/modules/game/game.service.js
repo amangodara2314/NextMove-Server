@@ -9,7 +9,79 @@ import { updatePlayerConnection } from "../../utils/reconnection.js";
 import calculatePlayerTime from "../../utils/calculatePlayerTime.js";
 import acquireLock from "../../utils/acquireLock.js";
 import releaseLock from "../../utils/releaseLock.js";
-import { endGame } from "../../utils/game.js";
+import gameLogic from "../../utils/gameLogic.js";
+import { scheduleGameJobs } from "../../utils/scheduleGameJobs.js";
+
+const getActiveGame = async (gameId) => {
+  const game = await gameRepository.getRedisGame(gameId);
+  if (!game) throw new AppError("Game state not found.", 404);
+  if (game.status !== GameStatus.ACTIVE)
+    throw new AppError("Game is not active.", 400);
+  game.version = Number(game.version);
+  return game;
+};
+
+const makeMove = async (
+  gameId,
+  { from, to, promotion, version, timeSpent, timestamp },
+) => {
+  const lockKey = REDIS_KEYS.lock("game", gameId);
+  const acquired = await acquireLock(lockKey, 5);
+  if (!acquired) throw new AppError("Game is busy. Please try again.", 409);
+
+  try {
+    let game = await getActiveGame(gameId);
+    gameLogic.assertVersionMatches(game, version);
+
+    const { chess, moveResult } = gameLogic.validateChessMove(game.fen, {
+      from,
+      to,
+      promotion,
+    });
+    const move = gameLogic.applyMoveToGameState(
+      game,
+      chess,
+      moveResult,
+      timeSpent,
+      timestamp,
+    );
+
+    console.log(
+      `Player ${moveResult.color} made move ${from}-${to} in game ${gameId}. Remaining - White: ${game.whiteTimeLeft}ms, Black: ${game.blackTimeLeft}ms`,
+    );
+
+    const ending = gameLogic.determineGameEnd(
+      game,
+      move,
+      chess,
+      moveResult.color,
+    );
+    let finishedGame = null;
+    if (ending) {
+      finishedGame = await gameRepository.finishGame(
+        game,
+        ending.status,
+        ending.result,
+      );
+      game = { ...game, ...finishedGame };
+    }
+
+    await gameRepository.persistMove(gameId, move, game);
+    await scheduleGameJobs(gameId, move, game);
+
+    const response = gameLogic.buildResponse(game, move);
+
+    return {
+      response,
+      broadcastEvent:
+        game.status === GameStatus.TIMEOUT ? "PLAYER_TIMEOUT" : "MOVE_MADE",
+      broadcastPayload:
+        game.status === GameStatus.TIMEOUT ? finishedGame : response,
+    };
+  } finally {
+    await releaseLock(lockKey, acquired);
+  }
+};
 
 const getGame = async (gameId, userId) => {
   const key = REDIS_KEYS.game(gameId);
@@ -197,21 +269,12 @@ const checkPlayerTimeout = async (gameId) => {
       }
       // update the game status to TIMEOUT and set the winner
       const winner = game.whiteTime <= 0 ? "BLACK" : "WHITE";
-      game = await endGame(game, GameStatus.TIMEOUT, winner);
+      [game] = await Promise.all([
+        gameRepository.finishGame(game, GameStatus.TIMEOUT, winner),
+        gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
+      ]);
 
       // clean up redis keys
-      const player1 = REDIS_KEYS.userActiveGame(game.white);
-      const player2 = REDIS_KEYS.userActiveGame(game.black);
-      const activeGameKey = REDIS_KEYS.userActiveGame(gameId);
-      const movesKey = REDIS_KEYS.gameMoves(gameId);
-      const gameKey = REDIS_KEYS.game(gameId);
-      await Promise.all([
-        redis.del(activeGameKey),
-        redis.del(player1),
-        redis.del(player2),
-        redis.del(gameKey),
-        redis.del(movesKey),
-      ]);
     } catch (error) {
       console.error(
         `Error while handling player timeout for game ${gameId}:`,
@@ -232,4 +295,10 @@ const checkPlayerTimeout = async (gameId) => {
   return { status: game.status, winner: game.winner || null };
 };
 
-export default { getGame, getMoves, checkPlayerTimeout };
+export default {
+  getGame,
+  getMoves,
+  checkPlayerTimeout,
+  makeMove,
+  getActiveGame,
+};

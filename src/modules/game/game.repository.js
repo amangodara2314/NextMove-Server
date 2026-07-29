@@ -88,6 +88,50 @@ const getRedisGame = async (gameId) => {
   };
 };
 
+const persistMove = async (gameId, move, game) => {
+  const gameKey = REDIS_KEYS.game(gameId);
+  const movesKey = REDIS_KEYS.gameMoves(gameId);
+  const serializedGame = {
+    ...game,
+    whitePlayer: JSON.stringify(game?.whitePlayer),
+    blackPlayer: JSON.stringify(game?.blackPlayer),
+  };
+  await redis
+    .multi()
+    .rpush(movesKey, JSON.stringify(move))
+    .hset(gameKey, serializedGame)
+    .exec();
+};
+
+const finishGame = async (game, status, result, abortedBy) => {
+  const updated = await updateGame(game.id, {
+    status,
+    result,
+    turn: game.turn,
+    abortedBy,
+    whiteTimeLeft: parseInt(game.whiteTimeLeft),
+    blackTimeLeft: parseInt(game.blackTimeLeft),
+    lastMoveAt: game.lastMoveAt || null,
+  });
+  await Promise.all([
+    redis.del(REDIS_KEYS.userActiveGame(game.white)),
+    redis.del(REDIS_KEYS.userActiveGame(game.black)),
+  ]);
+  return updated;
+};
+
+const cleanUpRedisKeys = async (gameId, white, black) => {
+  const gameKey = REDIS_KEYS.game(gameId);
+  const movesKey = REDIS_KEYS.gameMoves(gameId);
+  const whiteActiveGameKey = REDIS_KEYS.userActiveGame(white);
+  const blackActiveGameKey = REDIS_KEYS.userActiveGame(black);
+  await Promise.all([
+    redis.del(gameKey),
+    redis.del(movesKey),
+    redis.del(whiteActiveGameKey),
+    redis.del(blackActiveGameKey),
+  ]);
+};
 export default {
   createGame,
   findGame,
@@ -101,4 +145,7 @@ export default {
   createRedisGame,
   getRedisGame,
   updateRedisGame,
+  persistMove,
+  finishGame,
+  cleanUpRedisKeys,
 };
