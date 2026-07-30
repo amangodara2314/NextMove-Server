@@ -25,7 +25,7 @@ const reconnectionTimeoutJob = async (job) => {
 
   const game = await gameRepository.getRedisGame(gameId);
 
-  if (!game || Object.keys(game).length === 0) {
+  if (!game) {
     console.log(`Game ${gameId} not found in Redis. No action needed.`);
     return;
   }
@@ -52,20 +52,9 @@ const reconnectionTimeoutJob = async (job) => {
   await gameRepository.finishGame(
     game,
     GameStatus.ABORTED,
-    userColor === "WHITE" ? "0-1" : "1-0",
+    userColor,
     userColor,
   );
-
-  console.log(`Notifying players about game abortion for game ${gameId}.`);
-  const room = io.sockets.adapter.rooms.get(gameId);
-  console.log(
-    `Room ${gameId} has ${room ? room.size : 0} sockets (in this process)`,
-  );
-
-  // io.to(gameId).emit("GAME_ABORTED", {
-  //   message: `Game is aborted by ${userColor.toLocaleLowerCase()}`,
-  //   abortedBy: userColor,
-  // });
 
   notify({
     room: gameId,

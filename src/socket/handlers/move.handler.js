@@ -26,9 +26,6 @@ const handleMoveEvents = async (socket) => {
     }
 
     const { gameId } = data;
-    if (!gameId) {
-      return callback?.({ success: false, message: "Game ID is required." });
-    }
 
     try {
       const { response, broadcastEvent, broadcastPayload } =
@@ -39,8 +36,6 @@ const handleMoveEvents = async (socket) => {
     } catch (error) {
       console.error("error in move handler", error);
 
-      // if AppError carries a statusCode/code, this is a good spot to
-      // send it back to the client too, e.g. { code: error.code }
       callback?.({
         success: false,
         message:

@@ -124,6 +124,7 @@ const handleReservationAck = async (socket) => {
             delay: whiteTimeLeft + 10,
           },
         ),
+        redis.del(key),
       ]);
 
       // notify both players that the match is ready with gameId

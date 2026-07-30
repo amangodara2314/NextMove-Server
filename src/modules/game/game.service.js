@@ -256,8 +256,8 @@ const checkPlayerTimeout = async (gameId) => {
   console.log(
     `Checking player timeout for game ${gameId}: White time left: ${game.whiteTimeLeft}, Black time left: ${game.blackTimeLeft}`,
   );
-  if (game.whiteTime <= 0 || game.blackTime <= 0) {
-    let lockKey = REDIS_KEYS.playerTimeoutLock(gameId);
+  if (Number(game.whiteTimeLeft) <= 0 || Number(game.blackTimeLeft) <= 0) {
+    let lockKey = REDIS_KEYS.lock("game", gameId);
     let acquiredLock;
     try {
       acquiredLock = await acquireLock(lockKey, 5000); // 5 seconds lock
@@ -268,7 +268,7 @@ const checkPlayerTimeout = async (gameId) => {
         return { status: game.status };
       }
       // update the game status to TIMEOUT and set the winner
-      const winner = game.whiteTime <= 0 ? "BLACK" : "WHITE";
+      const winner = game.whiteTimeLeft <= 0 ? "BLACK" : "WHITE";
       [game] = await Promise.all([
         gameRepository.finishGame(game, GameStatus.TIMEOUT, winner),
         gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
