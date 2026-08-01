@@ -21,6 +21,7 @@ const handleReservationTimeoutJob = async (job) => {
 
   // return if reservation not found
   if (!reservation) {
+    console.log(`Reservation ${data.reservationId} not found.`);
     return;
   }
 

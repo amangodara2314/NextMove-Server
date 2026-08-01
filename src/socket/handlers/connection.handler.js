@@ -18,7 +18,7 @@ const handleSocketConnection = async (socket) => {
   console.log("user email :", socket?.user?.email);
   socket.join(userId);
 
-  socket.on("disconnect", async () => {
+  socket.on("disconnect", async (reason) => {
     const currSocket = await redis.get(socketKey);
     if (currSocket === socket.id) {
       await redis.del(socketKey);
@@ -41,6 +41,7 @@ const handleSocketConnection = async (socket) => {
       }
     }
     console.log("socket disconnected :", socket.id);
+    console.log(`Socket ${socket.id} disconnected due to: ${reason}`);
   });
 };
 
