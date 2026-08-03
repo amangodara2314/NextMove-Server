@@ -132,6 +132,19 @@ const cleanUpRedisKeys = async (gameId, white, black) => {
     redis.del(blackActiveGameKey),
   ]);
 };
+
+const createDrawOffer = async ({ gameId, offeredBy, offeredTo }, ttl) => {
+  const key = REDIS_KEYS.drawOffer(gameId);
+
+  return await redis.set(
+    key,
+    { gameId, offeredBy, offeredTo },
+    "EX",
+    ttl,
+    "NX",
+  );
+};
+
 export default {
   createGame,
   findGame,
@@ -148,4 +161,5 @@ export default {
   persistMove,
   finishGame,
   cleanUpRedisKeys,
+  createDrawOffer,
 };

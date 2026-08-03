@@ -295,6 +295,40 @@ const checkPlayerTimeout = async (gameId) => {
   return { status: game.status, winner: game.winner || null };
 };
 
+const offerDraw = async (gameId, userId, offeredTo) => {
+  let game = await gameRepository.getRedisGame(gameId);
+
+  // validate game
+  if (!game) {
+    throw new AppError("Game not found");
+  }
+
+  if (game.status !== GameStatus.ACTIVE) {
+    throw new AppError("Game is not active");
+  }
+
+  calculatePlayerTime(game);
+
+  const playerTime =
+    game.white === userId ? game.whiteTimeLeft : game.blackTimeLeft;
+
+  if (playerTime === 0) {
+    throw new AppError("You are out of time. you cannot offer draw");
+  }
+
+  const drawOffer = await gameRepository.createDrawOffer({
+    gameId,
+    offeredBy: userId,
+    offeredTo,
+  });
+
+  if (!drawOffer) {
+    throw new AppError("Cannot offer draw right now. Please try again later");
+  }
+
+  return { drawOffer };
+};
+
 export default {
   getGame,
   getMoves,
