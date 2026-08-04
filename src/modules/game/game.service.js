@@ -329,6 +329,54 @@ const offerDraw = async (gameId, userId, offeredTo) => {
   return { drawOffer };
 };
 
+const acceptDraw = async (gameId, userId) => {
+  const lockKey = REDIS_KEYS.lock("game", gameId);
+  let acquired = null;
+
+  try {
+    acquired = await acquireLock(lockKey, 10);
+    const drawOfferKey = REDIS_KEYS.drawOffer(gameId);
+    const offer = await redis.get(drawOfferKey);
+
+    const drawOffer = offer ? JSON.parse(offer) : null;
+
+    if (!drawOffer) {
+      throw new AppError("No draw offer found for this game");
+    }
+    if (drawOffer.offeredBy === userId) {
+      throw new AppError("Cannot accept your own draw offer");
+    }
+
+    if (drawOffer.offeredTo !== userId) {
+      throw new AppError("You are not authorized to accept this draw offer");
+    }
+
+    let game = await gameRepository.getRedisGame(gameId);
+
+    if (!game) {
+      throw new AppError("Game not found");
+    }
+
+    if (game.status !== GameStatus.ACTIVE) {
+      throw new AppError("Game is not active");
+    }
+
+    const [updatedGame] = await Promise.all([
+      gameRepository.finishGame(game, GameStatus.DRAW, "DRAW"),
+      gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
+      redis.del(drawOfferKey),
+    ]);
+
+    io.to(gameId).emit("DRAW_ACCEPTED", updatedGame);
+
+    return { game: updatedGame };
+  } finally {
+    if (acquired) {
+      await releaseLock(lockKey, acquired);
+    }
+  }
+};
+
 export default {
   getGame,
   getMoves,

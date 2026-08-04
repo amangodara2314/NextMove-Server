@@ -123,14 +123,7 @@ const finishGame = async (game, status, result, abortedBy) => {
 const cleanUpRedisKeys = async (gameId, white, black) => {
   const gameKey = REDIS_KEYS.game(gameId);
   const movesKey = REDIS_KEYS.gameMoves(gameId);
-  const whiteActiveGameKey = REDIS_KEYS.userActiveGame(white);
-  const blackActiveGameKey = REDIS_KEYS.userActiveGame(black);
-  await Promise.all([
-    redis.del(gameKey),
-    redis.del(movesKey),
-    redis.del(whiteActiveGameKey),
-    redis.del(blackActiveGameKey),
-  ]);
+  await Promise.all([redis.del(gameKey), redis.del(movesKey)]);
 };
 
 const createDrawOffer = async ({ gameId, offeredBy, offeredTo }, ttl) => {
