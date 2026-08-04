@@ -28,4 +28,18 @@ const checkPlayerTimeout = async (req, res) => {
   return successResponse(res, 200, result, "Player timeout checked");
 };
 
-export default { getGame, getMoves, checkPlayerTimeout };
+const offerDraw = async (req, res) => {
+  const { gameId } = req.params;
+  const userId = req.user.userId;
+  const result = await gameService.offerDraw(gameId, userId);
+  return successResponse(res, 200, result, "Draw offer sent");
+};
+
+const acceptDraw = async (req, res) => {
+  const { gameId } = req.params;
+  const userId = req.user.userId;
+  const result = await gameService.acceptDraw(gameId, userId);
+  return successResponse(res, 200, result, "Draw accepted");
+};
+
+export default { getGame, getMoves, checkPlayerTimeout, offerDraw, acceptDraw };

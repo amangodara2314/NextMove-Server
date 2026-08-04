@@ -9,5 +9,7 @@ gameRouter.use(authenticate);
 gameRouter.get("/moves/:gameId", gameController.getMoves);
 gameRouter.get("/check-timeout/:gameId", gameController.checkPlayerTimeout);
 gameRouter.get("/:gameId", gameController.getGame);
+gameRouter.post("/offer-draw/:gameId", gameController.offerDraw);
+gameRouter.post("/accept-draw/:gameId", gameController.acceptDraw);
 
 export default gameRouter;

@@ -11,6 +11,7 @@ import acquireLock from "../../utils/acquireLock.js";
 import releaseLock from "../../utils/releaseLock.js";
 import gameLogic from "../../utils/gameLogic.js";
 import { scheduleGameJobs } from "../../utils/scheduleGameJobs.js";
+import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
 
 const getActiveGame = async (gameId) => {
   const game = await gameRepository.getRedisGame(gameId);
@@ -295,7 +296,7 @@ const checkPlayerTimeout = async (gameId) => {
   return { status: game.status, winner: game.winner || null };
 };
 
-const offerDraw = async (gameId, userId, offeredTo) => {
+const offerDraw = async (gameId, userId) => {
   let game = await gameRepository.getRedisGame(gameId);
 
   // validate game
@@ -315,6 +316,8 @@ const offerDraw = async (gameId, userId, offeredTo) => {
   if (playerTime === 0) {
     throw new AppError("You are out of time. you cannot offer draw");
   }
+
+  const offeredTo = game.white === userId ? game.black : game.white;
 
   const drawOffer = await gameRepository.createDrawOffer({
     gameId,
@@ -365,6 +368,7 @@ const acceptDraw = async (gameId, userId) => {
       gameRepository.finishGame(game, GameStatus.DRAW, "DRAW"),
       gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
       redis.del(drawOfferKey),
+      playerTimeoutQueue.remove(`clock_${gameId}`),
     ]);
 
     io.to(gameId).emit("DRAW_ACCEPTED", updatedGame);
@@ -383,4 +387,6 @@ export default {
   checkPlayerTimeout,
   makeMove,
   getActiveGame,
+  offerDraw,
+  acceptDraw,
 };
