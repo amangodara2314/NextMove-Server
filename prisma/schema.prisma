@@ -18,13 +18,34 @@ model User {
   email     String   @unique
   password  String   
 
-  rating    Int  @default(1200)
   sessions  Session[]  
+  ratings   UserRating[]
 
   whiteGames Game[] @relation("WhitePlayer")
   blackGames Game[] @relation("BlackPlayer")
 
   createdAt DateTime @default(now())
+}
+
+model UserRating {
+  id        String   @id @default(uuid())
+  userId    String  
+  user      User     @relation(fields: [userId], references: [id])
+
+  type     RatingType
+
+  gamesPlayed Int @default(0)
+  wins        Int @default(0)
+  losses      Int @default(0)
+  draws       Int @default(0)
+  
+  rating    Int      @default(1200)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, type])
+  @@index([type, rating])
 }
 
 model Session {
@@ -58,6 +79,17 @@ model Game {
   blackTimeLeft Int? // in ms
   timeControl TimeControl
   lastMoveAt DateTime?
+
+  ratingApplied     Boolean @default(false)
+
+  whiteRatingBefore Int?
+  blackRatingBefore Int?
+
+  whiteRatingAfter  Int?
+  blackRatingAfter  Int?
+
+  whiteRatingChange Int?
+  blackRatingChange Int?
 
   moves  Move[]
 
@@ -113,6 +145,13 @@ enum PieceType {
   ROOK
   QUEEN
   KING
+}
+
+enum RatingType {
+  BLITZ
+  BULLET
+  RAPID
+  CLASSICAL
 }
 
 enum CastleType {

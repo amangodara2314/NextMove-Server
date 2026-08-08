@@ -22,3 +22,5 @@ export const RESERVATION_TTL = process.env.RESERVATION_TTL || 30; // in seconds
 export const FRONTEND_URL = process.env.FRONTEND_URL;
 
 export const RECONNECTION_TIMEOUT = process.env.RECONNECTION_TIMEOUT || 30; // in seconds
+
+export const DRAW_OFFER_TTL = process.env.DRAW_OFFER_TTL || 15; // in seconds

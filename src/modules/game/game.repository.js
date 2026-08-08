@@ -131,7 +131,7 @@ const createDrawOffer = async ({ gameId, offeredBy, offeredTo }, ttl) => {
 
   return await redis.set(
     key,
-    { gameId, offeredBy, offeredTo },
+    JSON.stringify({ gameId, offeredBy, offeredTo }),
     "EX",
     ttl,
     "NX",

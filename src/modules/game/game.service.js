@@ -12,6 +12,7 @@ import releaseLock from "../../utils/releaseLock.js";
 import gameLogic from "../../utils/gameLogic.js";
 import { scheduleGameJobs } from "../../utils/scheduleGameJobs.js";
 import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
+import { DRAW_OFFER_TTL } from "../../constants/env.js";
 
 const getActiveGame = async (gameId) => {
   const game = await gameRepository.getRedisGame(gameId);
@@ -319,15 +320,25 @@ const offerDraw = async (gameId, userId) => {
 
   const offeredTo = game.white === userId ? game.black : game.white;
 
-  const drawOffer = await gameRepository.createDrawOffer({
-    gameId,
-    offeredBy: userId,
-    offeredTo,
-  });
+  const drawOffer = await gameRepository.createDrawOffer(
+    {
+      gameId,
+      offeredBy: userId,
+      offeredTo,
+    },
+    DRAW_OFFER_TTL,
+  );
 
   if (!drawOffer) {
     throw new AppError("Cannot offer draw right now. Please try again later");
   }
+
+  io.to(offeredTo).emit("DRAW_OFFERED", {
+    gameId,
+    offeredBy: userId,
+    offeredTo,
+    ttl: DRAW_OFFER_TTL,
+  });
 
   return { drawOffer };
 };
