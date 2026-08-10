@@ -11,6 +11,8 @@ const requiredEnv = [
   "REDIS_PASSWORD",
   "SOCKET_RATE_LIMIT",
   "FRONTEND_URL",
+  "GOOGLE_CLIENT_ID",
+  "GOOGLE_CLIENT_SECRET",
 ];
 
 const validateEnv = () => {

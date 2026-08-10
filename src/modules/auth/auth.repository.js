@@ -2,7 +2,16 @@ import prisma from "../../config/prisma.js";
 
 const createUser = async (tx, data) => {
   const db = tx || prisma;
-  return await db.user.create({ data });
+  const userData = data.userData;
+  const ratingData = data.ratingData;
+  return await prisma.user.create({
+    data: {
+      ...userData,
+      ratings: {
+        createMany: ratingData,
+      },
+    },
+  });
 };
 
 const findUserByEmail = async (email, options) => {

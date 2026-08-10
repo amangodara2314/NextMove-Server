@@ -1,3 +1,4 @@
+import { RatingType } from "@prisma/client";
 import prisma from "../../config/prisma.js";
 import {
   ACCESS_TOKEN_EXPIRES_IN,
@@ -57,11 +58,17 @@ const register = async (data) => {
 
   const passwordHash = await generateHash(password);
 
-  const user = await authRepository.createUser(null, {
+  const userData = {
     email,
     password: passwordHash,
     username,
+  };
+
+  const ratingData = Object.values(RatingType).map((type) => {
+    type;
   });
+
+  const user = await authRepository.createUser(null, { userData, ratingData });
 
   return await createSessionAndTokens(user, { ipAddress, userAgent });
 };
