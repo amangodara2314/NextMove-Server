@@ -18,6 +18,18 @@ const getTokenPayload = (data) => {
   };
 };
 
+const verifyGoogleToken = async (token) => {
+  try {
+    const ticket = await googleAuth.verifyIdToken({
+      idToken: token,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    return ticket.getPayload();
+  } catch (error) {
+    throw new AppError("Invalid Google token", 401);
+  }
+};
+
 const createSessionAndTokens = async (user, meta) => {
   const jti = uuidv4();
 

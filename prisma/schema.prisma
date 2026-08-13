@@ -16,7 +16,9 @@ model User {
   id        String      @id @default(uuid())
   username  String
   email     String   @unique
-  password  String   
+  password  String?
+  profileImage String?
+  isVerified Boolean  @default(false)   
 
   sessions  Session[]  
   ratings   UserRating[]
