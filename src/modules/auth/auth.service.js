@@ -61,21 +61,36 @@ const createSessionAndTokens = async (user, meta) => {
 };
 
 const register = async (data) => {
-  const { email, password, username, ipAddress, userAgent } = data;
+  const {
+    email,
+    password = null,
+    username,
+    ipAddress,
+    userAgent,
+    isVerified = false,
+    isGoogleAuth = false,
+  } = data;
 
   const existingUser = await authRepository.findUserByEmail(email);
   if (existingUser) {
     throw new AppError("User already exists", 409);
   }
 
-  const passwordHash = await generateHash(password);
-
   const userData = {
     email,
-    password: passwordHash,
     username,
+    isVerified,
   };
 
+  if (!isGoogleAuth) {
+    if (!password)
+      throw new AppError(
+        "Password is required for non-Google registration",
+        400,
+      );
+    const passwordHash = await generateHash(password);
+    userData.password = userData;
+  }
   const ratingData = Object.values(RatingType).map((type) => {
     type;
   });
@@ -92,6 +107,13 @@ const login = async (data) => {
 
   if (!user || !(await compareHash(password, user.password))) {
     throw new AppError("Invalid credentials", 401);
+  }
+
+  if (!user.isVerified) {
+    throw new AppError(
+      "User email is not verified. Please verify your email.",
+      403,
+    );
   }
 
   return await createSessionAndTokens(user, { ipAddress, userAgent });
@@ -155,4 +177,24 @@ const getMe = async (userId) => {
   return user;
 };
 
-export default { register, login, refreshToken, getMe };
+const googleRegister = async (data) => {
+  const { token, userAgent, ipAddress } = data;
+  const payload = await verifyGoogleToken(token);
+
+  const { email, name, picture, email_verified } = payload;
+
+  if (!email || !name || !email_verified) {
+    throw new AppError("Invalid Google token payload", 400);
+  }
+
+  return register({
+    email,
+    username: name,
+    isVerified: true,
+    isGoogleAuth: true,
+    ipAddress,
+    userAgent,
+  });
+};
+
+export default { register, login, refreshToken, getMe, googleRegister };
