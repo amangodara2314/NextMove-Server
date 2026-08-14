@@ -111,11 +111,23 @@ const register = async (data) => {
 };
 
 const login = async (data) => {
-  const { email, password, ipAddress, userAgent } = data;
+  let {
+    email,
+    password,
+    ipAddress,
+    userAgent,
+    isGoogleAuth = false,
+    user,
+  } = data;
 
-  const user = await authRepository.findUserByEmail(email);
+  if (!user) {
+    user = await authRepository.findUserByEmail(email);
+  }
 
-  if (!user || !(await compareHash(password, user.password))) {
+  if (
+    !isGoogleAuth &&
+    (!user || !(await compareHash(password, user.password)))
+  ) {
     throw new AppError("Invalid credentials", 401);
   }
 
@@ -187,7 +199,7 @@ const getMe = async (userId) => {
   return user;
 };
 
-const googleRegister = async (data) => {
+const googleAuth = async (data) => {
   const { code, userAgent, ipAddress } = data;
   const payload = await verifyGoogleToken(code);
   console.log("Google token payload:", payload);
@@ -195,6 +207,18 @@ const googleRegister = async (data) => {
 
   if (!email || !name || !email_verified) {
     throw new AppError("Invalid Google token payload", 400);
+  }
+
+  const existingUser = await authRepository.findUserByEmail(email);
+
+  if (existingUser) {
+    return login({
+      email,
+      userAgent,
+      ipAddress,
+      isGoogleAuth: true,
+      user: existingUser,
+    });
   }
 
   return register({
@@ -207,4 +231,4 @@ const googleRegister = async (data) => {
   });
 };
 
-export default { register, login, refreshToken, getMe, googleRegister };
+export default { register, login, refreshToken, getMe, googleAuth };

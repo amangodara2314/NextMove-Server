@@ -69,10 +69,10 @@ const getMe = async (req, res) => {
   successResponse(res, 200, { user: result, accessToken: token }, "User found");
 };
 
-const googleRegister = async (req, res) => {
+const googleAuth = async (req, res) => {
   const { code } = req.body;
   const { ipAddress, userAgent } = req;
-  const { accessToken, refreshToken, user } = await authService.googleRegister({
+  const { accessToken, refreshToken, user } = await authService.googleAuth({
     code,
     ipAddress,
     userAgent,
@@ -82,4 +82,4 @@ const googleRegister = async (req, res) => {
   successResponse(res, 201, { accessToken, user }, "Registered successfully");
 };
 
-export default { register, login, refreshToken, getMe, googleRegister };
+export default { register, login, refreshToken, getMe, googleAuth };
