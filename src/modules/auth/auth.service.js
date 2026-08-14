@@ -10,6 +10,7 @@ import parseDuration from "../../utils/parseDuration.js";
 import { generateToken, verifyToken } from "../../utils/token.js";
 import authRepository from "./auth.repository.js";
 import { v4 as uuidv4 } from "uuid";
+import oauth2Client from "../../config/googleAuth.js";
 
 const getTokenPayload = (data) => {
   return {
@@ -18,14 +19,23 @@ const getTokenPayload = (data) => {
   };
 };
 
-const verifyGoogleToken = async (token) => {
+const verifyGoogleToken = async (code) => {
   try {
-    const ticket = await googleAuth.verifyIdToken({
-      idToken: token,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    return ticket.getPayload();
+    const googleResult = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(googleResult.tokens);
+
+    const userResult = await fetch(
+      "https://www.googleapis.com/oauth2/v3/userinfo",
+      {
+        headers: {
+          Authorization: `Bearer ${googleResult.tokens.access_token}`,
+        },
+      },
+    );
+    const userInfo = await userResult.json();
+    return userInfo;
   } catch (error) {
+    console.error("Error verifying Google token:", error);
     throw new AppError("Invalid Google token", 401);
   }
 };
@@ -89,11 +99,11 @@ const register = async (data) => {
         400,
       );
     const passwordHash = await generateHash(password);
-    userData.password = userData;
+    userData.password = passwordHash;
   }
-  const ratingData = Object.values(RatingType).map((type) => {
-    type;
-  });
+  const ratingData = Object.values(RatingType).map((type) => ({
+    type,
+  }));
 
   const user = await authRepository.createUser(null, { userData, ratingData });
 
@@ -178,9 +188,9 @@ const getMe = async (userId) => {
 };
 
 const googleRegister = async (data) => {
-  const { token, userAgent, ipAddress } = data;
-  const payload = await verifyGoogleToken(token);
-
+  const { code, userAgent, ipAddress } = data;
+  const payload = await verifyGoogleToken(code);
+  console.log("Google token payload:", payload);
   const { email, name, picture, email_verified } = payload;
 
   if (!email || !name || !email_verified) {

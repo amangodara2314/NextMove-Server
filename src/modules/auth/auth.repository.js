@@ -8,7 +8,9 @@ const createUser = async (tx, data) => {
     data: {
       ...userData,
       ratings: {
-        createMany: ratingData,
+        createMany: {
+          data: ratingData,
+        },
       },
     },
   });

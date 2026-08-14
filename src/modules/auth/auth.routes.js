@@ -10,6 +10,7 @@ authRouter.post(
   validate(createUserSchema),
   authController.register,
 );
+authRouter.post("/google-register", authController.googleRegister);
 
 authRouter.post("/login", validate(loginUserSchema), authController.login);
 authRouter.get("/refresh-token", authController.refreshToken);
