@@ -1,6 +1,8 @@
 import prisma from "../../config/prisma.js";
 import redis from "../../config/redis.js";
+import { getRatingType } from "../../constants/game.js";
 import { REDIS_KEYS } from "../../constants/keys.js";
+import { calculateElo } from "../../utils/elo.js";
 
 const createGame = async (data) => {
   return await prisma.game.create({ data });
@@ -104,14 +106,81 @@ const persistMove = async (gameId, move, game) => {
 };
 
 const finishGame = async (game, status, result, abortedBy) => {
-  const updated = await updateGame(game.id, {
-    status,
-    result,
-    turn: game.turn,
-    abortedBy,
-    whiteTimeLeft: parseInt(game.whiteTimeLeft),
-    blackTimeLeft: parseInt(game.blackTimeLeft),
-    lastMoveAt: game.lastMoveAt || null,
+  const updated = await prisma.$transaction(async (tx) => {
+    const dbGame = await tx.game.findUnique({
+      where: {
+        id: gameId,
+      },
+      select: {
+        whiteRatingBefore: true,
+        blackRatingBefore: true,
+        ratingApplied: true,
+      },
+    });
+
+    if (!dbGame) {
+      throw new Error("Game not found");
+    }
+
+    if (dbGame.ratingApplied) {
+      return game;
+    }
+
+    const { whiteRatingBefore, blackRatingBefore } = dbGame;
+
+    const ratings = calculateElo({
+      whiteRating: whiteRatingBefore,
+      blackRating: blackRatingBefore,
+      result,
+    });
+
+    const whiteChange = ratings.whiteRating - whiteRatingBefore;
+
+    const blackChange = ratings.blackRating - blackRatingBefore;
+
+    const ratingType = getRatingType(game.timeControl);
+    const isDraw = result === "DRAW";
+    const isWhiteWinner = result === "WHITE";
+
+    const whiteRating = await tx.rating.update({
+      where: { userId: game.white, type: ratingType },
+      data: {
+        rating: ratings.whiteRating,
+        gamesPlayed: { increment: 1 },
+        wins: { increment: isWhiteWinner ? 1 : 0 },
+        losses: { increment: !isWhiteWinner && !isDraw ? 1 : 0 },
+        draws: { increment: isDraw ? 1 : 0 },
+      },
+    });
+
+    const blackRating = await tx.rating.update({
+      where: { userId: game.black, type: ratingType },
+      data: {
+        rating: ratings.blackRating,
+        gamesPlayed: { increment: 1 },
+        wins: { increment: !isWhiteWinner && !isDraw ? 1 : 0 },
+        losses: { increment: isWhiteWinner ? 1 : 0 },
+        draws: { increment: isDraw ? 1 : 0 },
+      },
+    });
+
+    return await tx.game.update({
+      where: { id: game.id },
+      data: {
+        status,
+        result,
+        abortedBy,
+        whiteRatingAfter: ratings.whiteRating,
+        blackRatingAfter: ratings.blackRating,
+        whiteRatingChange: whiteChange,
+        blackRatingChange: blackChange,
+        turn: game.turn,
+        whiteTimeLeft: parseInt(game.whiteTimeLeft),
+        blackTimeLeft: parseInt(game.blackTimeLeft),
+        lastMoveAt: game.lastMoveAt || null,
+        ratingApplied: true,
+      },
+    });
   });
   await Promise.all([
     redis.del(REDIS_KEYS.userActiveGame(game.white)),
