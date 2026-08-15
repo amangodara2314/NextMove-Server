@@ -1,10 +1,12 @@
 import { io } from "../../app.js";
 import redis from "../../config/redis.js";
 import { RESERVATION_TTL } from "../../constants/env.js";
+import { getRatingType } from "../../constants/game.js";
 import { REDIS_KEYS } from "../../constants/keys.js";
 import { reservationLuaScript } from "../../constants/luaScript.js";
 import { TIME_CONTROL } from "../../constants/timeControl.js";
 import gameRepository from "../../modules/game/game.repository.js";
+import ratingRepository from "../../modules/rating/ratingRepository.js";
 import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
 
 const handleReservationAck = async (socket) => {
@@ -87,6 +89,13 @@ const handleReservationAck = async (socket) => {
       const whiteTimeLeft = timeControlSettings.initialTime;
       const blackTimeLeft = timeControlSettings.initialTime;
       let game;
+
+      const ratingType = getRatingType(timeControl);
+
+      const [whiteRatingBefore, blackRatingBefore] = await Promise.all([
+        ratingRepository.getUserRating(white, ratingType),
+        ratingRepository.getUserRating(black, ratingType),
+      ]);
       try {
         game = await gameRepository.createGame({
           white,
@@ -94,6 +103,8 @@ const handleReservationAck = async (socket) => {
           timeControl,
           whiteTimeLeft,
           blackTimeLeft,
+          whiteRatingBefore,
+          blackRatingBefore,
         });
       } catch (error) {
         console.log(
