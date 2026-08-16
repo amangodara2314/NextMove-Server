@@ -1,4 +1,4 @@
-import prisma from "../../config/prisma";
+import prisma from "../../config/prisma.js";
 
 const getUserRating = async (userId, type, options = {}) => {
   return await prisma.userRating.findUnique({
