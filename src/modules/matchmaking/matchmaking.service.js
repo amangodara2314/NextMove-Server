@@ -16,6 +16,7 @@ import reservationTimeoutQueue from "../../queues/reservationTimeout.queue.js";
 import { v4 as uuidv4 } from "uuid";
 import { TimeControl } from "@prisma/client";
 import { getTimeControl } from "../../constants/timeControl.js";
+import { getRatingType } from "../../constants/game.js";
 
 const newGame = async (userId, timeControl) => {
   if (!userId) {
@@ -31,15 +32,26 @@ const newGame = async (userId, timeControl) => {
     return { matchFound: true, reservationId: null, gameId: activeGameId };
   }
 
+  const ratingType = getRatingType(timeControl);
+
   const user = await authRepository.findUserById(userId, {
     select: {
       id: true,
       username: true,
-      rating: true,
+      ratings: {
+        where: { type: ratingType },
+        select: { rating: true },
+      },
     },
   });
 
-  const rating = user.rating;
+  console.log(user);
+
+  const rating = user.ratings[0]?.rating;
+
+  if (!rating) {
+    throw new AppError("Rating not found", 404);
+  }
 
   // check if the user is already in matchmaking queue
   const queueKey = REDIS_KEYS.matchmakingQueue(timeControl);

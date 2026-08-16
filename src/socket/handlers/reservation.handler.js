@@ -92,10 +92,13 @@ const handleReservationAck = async (socket) => {
 
       const ratingType = getRatingType(timeControl);
 
-      const [whiteRatingBefore, blackRatingBefore] = await Promise.all([
+      const [whiteRating, blackRating] = await Promise.all([
         ratingRepository.getUserRating(white, ratingType),
         ratingRepository.getUserRating(black, ratingType),
       ]);
+
+      const whiteRatingBefore = whiteRating.rating;
+      const blackRatingBefore = blackRating.rating;
       try {
         game = await gameRepository.createGame({
           white,

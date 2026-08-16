@@ -115,13 +115,13 @@ const getGame = async (gameId, userId) => {
       whitePlayer: {
         select: {
           username: true,
-          rating: true,
+          profileImage: true,
         },
       },
       blackPlayer: {
         select: {
           username: true,
-          rating: true,
+          profileImage: true,
         },
       },
     },
