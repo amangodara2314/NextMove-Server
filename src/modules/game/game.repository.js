@@ -106,6 +106,7 @@ const persistMove = async (gameId, move, game) => {
 };
 
 const finishGame = async (game, status, result, abortedBy) => {
+  const gameId = game.id;
   const updated = await prisma.$transaction(async (tx) => {
     const dbGame = await tx.game.findUnique({
       where: {
@@ -142,8 +143,13 @@ const finishGame = async (game, status, result, abortedBy) => {
     const isDraw = result === "DRAW";
     const isWhiteWinner = result === "WHITE";
 
-    const whiteRating = await tx.rating.update({
-      where: { userId: game.white, type: ratingType },
+    const whiteRating = await tx.userRating.update({
+      where: {
+        userId_type: {
+          userId: game.white,
+          type: ratingType,
+        },
+      },
       data: {
         rating: ratings.whiteRating,
         gamesPlayed: { increment: 1 },
@@ -153,8 +159,13 @@ const finishGame = async (game, status, result, abortedBy) => {
       },
     });
 
-    const blackRating = await tx.rating.update({
-      where: { userId: game.black, type: ratingType },
+    const blackRating = await tx.userRating.update({
+      where: {
+        userId_type: {
+          userId: game.black,
+          type: ratingType,
+        },
+      },
       data: {
         rating: ratings.blackRating,
         gamesPlayed: { increment: 1 },
@@ -165,7 +176,7 @@ const finishGame = async (game, status, result, abortedBy) => {
     });
 
     return await tx.game.update({
-      where: { id: game.id },
+      where: { id: gameId },
       data: {
         status,
         result,
