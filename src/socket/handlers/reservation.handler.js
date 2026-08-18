@@ -6,7 +6,7 @@ import { REDIS_KEYS } from "../../constants/keys.js";
 import { reservationLuaScript } from "../../constants/luaScript.js";
 import { TIME_CONTROL } from "../../constants/timeControl.js";
 import gameRepository from "../../modules/game/game.repository.js";
-import ratingRepository from "../../modules/rating/ratingRepository.js";
+import ratingRepository from "../../modules/rating/rating.repository.js";
 import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
 
 const handleReservationAck = async (socket) => {
