@@ -1,5 +1,5 @@
-import { successResponse } from "../../utils/apiResponse";
-import ratingService from "./rating.service";
+import { successResponse } from "../../utils/apiResponse.js";
+import ratingService from "./rating.service.js";
 
 const getUserRatings = async (req, res) => {
   const userId = req.user.userId;

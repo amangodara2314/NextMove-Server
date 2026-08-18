@@ -1,5 +1,5 @@
-import AppError from "../../utils/AppError";
-import ratingRepository from "./rating.repository";
+import AppError from "../../utils/AppError.js";
+import ratingRepository from "./rating.repository.js";
 
 const getUserRatings = async (userId) => {
   const ratings = await ratingRepository.getUserRatings(userId, {
