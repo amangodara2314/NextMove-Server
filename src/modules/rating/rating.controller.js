@@ -8,3 +8,5 @@ const getUserRatings = async (req, res) => {
 
   return successResponse(res, 200, result, "Rating data found");
 };
+
+export default { getUserRatings };
