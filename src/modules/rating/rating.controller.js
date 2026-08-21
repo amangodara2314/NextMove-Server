@@ -2,7 +2,7 @@ import { successResponse } from "../../utils/apiResponse.js";
 import ratingService from "./rating.service.js";
 
 const getUserRatings = async (req, res) => {
-  const userId = req.user.userId;
+  const userId = req.user.id;
 
   const result = await ratingService.getUserRatings(userId);
 

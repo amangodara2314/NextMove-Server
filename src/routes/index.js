@@ -8,6 +8,6 @@ const router = Router();
 router.use("/auth", authRouter);
 router.use("/matchmaking", matchmakingRouter);
 router.use("/game", gameRouter);
-router.use("/ratings", ratingRouter);
+router.use("/rating", ratingRouter);
 
 export default router;

@@ -6,6 +6,6 @@ const ratingRouter = Router();
 
 ratingRouter.use(authenticate);
 
-ratingRouter.get("/ratings", ratingController.getUserRatings);
+ratingRouter.get("/all", ratingController.getUserRatings);
 
 export default ratingRouter;
