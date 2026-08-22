@@ -8,9 +8,12 @@ const getUserRating = async (userId, type, options = {}) => {
 };
 
 const getUserRatings = async (userId, options) => {
-  const { where, ...ops } = options;
+  const { where = {}, ...ops } = options;
   where.userId = userId;
-  return await prisma.userRating.findMany(options);
+  return await prisma.userRating.findMany({
+    where,
+    ...ops,
+  });
 };
 
 export default { getUserRating, getUserRatings };
