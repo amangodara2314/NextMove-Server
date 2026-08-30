@@ -42,4 +42,23 @@ const acceptDraw = async (req, res) => {
   return successResponse(res, 200, result, "Draw accepted");
 };
 
-export default { getGame, getMoves, checkPlayerTimeout, offerDraw, acceptDraw };
+const getRecentGames = async (req, res) => {
+  const userId = req.user.userId;
+  const { take = 10 } = req.query;
+  if (isNaN(take) || take <= 0 || take > 10) {
+    throw new AppError(
+      "Invalid 'take' parameter. It must be a positive number. Maximum allowed value is 10.",
+    );
+  }
+  const result = await gameService.getRecentGames(userId, take);
+  return successResponse(res, 200, result, "Recent games found");
+};
+
+export default {
+  getGame,
+  getMoves,
+  checkPlayerTimeout,
+  offerDraw,
+  acceptDraw,
+  getRecentGames,
+};

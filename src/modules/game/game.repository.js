@@ -218,6 +218,10 @@ const createDrawOffer = async ({ gameId, offeredBy, offeredTo }, ttl) => {
   );
 };
 
+const getUserGames = async (options) => {
+  return await prisma.game.findMany(options);
+};
+
 export default {
   createGame,
   findGame,
@@ -235,4 +239,5 @@ export default {
   finishGame,
   cleanUpRedisKeys,
   createDrawOffer,
+  getUserGames,
 };

@@ -392,6 +392,35 @@ const acceptDraw = async (gameId, userId) => {
   }
 };
 
+const getRecentGames = async (userId, take = 10) => {
+  const where = {
+    OR: [{ white: userId }, { black: userId }],
+    select: {
+      id: true,
+      whitePlayer: {
+        select: {
+          username: true,
+          profileImage: true,
+        },
+      },
+      blackPlayer: {
+        select: {
+          username: true,
+          profileImage: true,
+        },
+      },
+      timeControl: true,
+      status: true,
+      result: true,
+      createdAt: true,
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  };
+  return await gameRepository.getUserGames({ where, take });
+};
+
 export default {
   getGame,
   getMoves,
@@ -400,4 +429,5 @@ export default {
   getActiveGame,
   offerDraw,
   acceptDraw,
+  getRecentGames,
 };

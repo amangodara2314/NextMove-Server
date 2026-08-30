@@ -51,7 +51,6 @@ const applyMoveToGameState = (
   return move;
 };
 
-// pure decision only — does NOT write to db/redis, just figures out the outcome
 const determineGameEnd = (game, move, chess, moverColor) => {
   if (move.isCheckmate) {
     return {
@@ -83,6 +82,10 @@ const buildResponse = (game, move) => {
     response.gameOver = true;
     response.gameStatus = game.status;
     response.gameResult = game.result;
+    response.whiteRatingAfter = game.whiteRatingAfter;
+    response.blackRatingAfter = game.blackRatingAfter;
+    response.whiteRatingChange = game.whiteRatingChange;
+    response.blackRatingChange = game.blackRatingChange;
   }
   return response;
 };
