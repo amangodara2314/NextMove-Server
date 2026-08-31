@@ -395,30 +395,39 @@ const acceptDraw = async (gameId, userId) => {
 const getRecentGames = async (userId, take = 10) => {
   const where = {
     OR: [{ white: userId }, { black: userId }],
-    select: {
-      id: true,
-      whitePlayer: {
-        select: {
-          username: true,
-          profileImage: true,
-        },
+  };
+
+  const select = {
+    id: true,
+    timeControl: true,
+    status: true,
+    result: true,
+    createdAt: true,
+    whiteRatingBefore: true,
+    blackRatingBefore: true,
+    whiteRatingAfter: true,
+    blackRatingAfter: true,
+    abortedBy: true,
+    whitePlayer: {
+      select: {
+        username: true,
+        profileImage: true,
       },
-      blackPlayer: {
-        select: {
-          username: true,
-          profileImage: true,
-        },
-      },
-      timeControl: true,
-      status: true,
-      result: true,
-      createdAt: true,
     },
-    orderBy: {
-      createdAt: "desc",
+    blackPlayer: {
+      select: {
+        username: true,
+        profileImage: true,
+      },
     },
   };
-  return await gameRepository.getUserGames({ where, take });
+
+  return await gameRepository.getUserGames({
+    where,
+    take,
+    orderBy: { createdAt: "desc" },
+    select,
+  });
 };
 
 export default {

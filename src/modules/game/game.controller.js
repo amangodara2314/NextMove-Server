@@ -44,7 +44,8 @@ const acceptDraw = async (req, res) => {
 
 const getRecentGames = async (req, res) => {
   const userId = req.user.userId;
-  const { take = 10 } = req.query;
+  let { take = 10 } = req.query;
+  take = parseInt(take, 10);
   if (isNaN(take) || take <= 0 || take > 10) {
     throw new AppError(
       "Invalid 'take' parameter. It must be a positive number. Maximum allowed value is 10.",
