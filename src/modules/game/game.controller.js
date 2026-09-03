@@ -55,6 +55,13 @@ const getRecentGames = async (req, res) => {
   return successResponse(res, 200, result, "Recent games found");
 };
 
+const getUserGames = async (req, res) => {
+  const userId = req.user.userId;
+  const { cursor } = req.query;
+  const result = await gameService.getUserGames(userId, cursor);
+  return successResponse(res, 200, result, "User games found");
+};
+
 export default {
   getGame,
   getMoves,
@@ -62,4 +69,5 @@ export default {
   offerDraw,
   acceptDraw,
   getRecentGames,
+  getUserGames,
 };

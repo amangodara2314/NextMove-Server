@@ -6,6 +6,7 @@ const gameRouter = Router();
 
 gameRouter.use(authenticate);
 
+gameRouter.get("/", gameController.getUserGames);
 gameRouter.get("/moves/:gameId", gameController.getMoves);
 gameRouter.get("/recent", gameController.getRecentGames);
 gameRouter.get("/check-timeout/:gameId", gameController.checkPlayerTimeout);

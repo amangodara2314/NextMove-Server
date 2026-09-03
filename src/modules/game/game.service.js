@@ -430,6 +430,50 @@ const getRecentGames = async (userId, take = 10) => {
   });
 };
 
+const getUserGames = async (userId, cursor, take = 10) => {
+  const where = {
+    OR: [{ white: userId }, { black: userId }],
+  };
+
+  const select = {
+    id: true,
+    timeControl: true,
+    status: true,
+    result: true,
+    createdAt: true,
+    whiteRatingBefore: true,
+    blackRatingBefore: true,
+    whiteRatingAfter: true,
+    blackRatingAfter: true,
+    abortedBy: true,
+    whitePlayer: {
+      select: {
+        username: true,
+        profileImage: true,
+      },
+    },
+    blackPlayer: {
+      select: {
+        username: true,
+        profileImage: true,
+      },
+    },
+  };
+
+  const result = await gameRepository.getUserGames({
+    where,
+    cursor: cursor ? { id: cursor } : undefined,
+    take,
+    orderBy: { createdAt: "desc" },
+    select,
+  });
+  return {
+    games: result,
+    nextCursor: result.length > 0 ? result[result.length - 1].id : null,
+    hasMore: result.length === take,
+  };
+};
+
 export default {
   getGame,
   getMoves,
@@ -439,4 +483,5 @@ export default {
   offerDraw,
   acceptDraw,
   getRecentGames,
+  getUserGames,
 };
