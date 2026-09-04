@@ -463,6 +463,7 @@ const getUserGames = async (userId, cursor, take = 10) => {
   const result = await gameRepository.getUserGames({
     where,
     cursor: cursor ? { id: cursor } : undefined,
+    skip: cursor ? 1 : 0,
     take,
     orderBy: { createdAt: "desc" },
     select,

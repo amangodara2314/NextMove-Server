@@ -11,6 +11,7 @@ import setupSocket from "./socket/index.js";
 import { FRONTEND_URL } from "./constants/env.js";
 import redis, { pubClient, subClient } from "./config/redis.js";
 import { createAdapter } from "@socket.io/redis-adapter";
+import prisma from "./config/prisma.js";
 
 dotenv.config();
 
@@ -37,6 +38,14 @@ if (process.env.NODE_ENV !== "production") {
 }
 
 setupSocket(io);
+
+app.use("/health", (req, res) => {
+  const redisHealth = redis.status === "ready" ? "healthy" : "unhealthy";
+
+  return res
+    .status(200)
+    .json({ message: "Server is running", redis: redisHealth });
+});
 
 app.use((req, res, next) => {
   // attack io to the req object to access it in routes
