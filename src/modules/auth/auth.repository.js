@@ -50,6 +50,10 @@ const findUserById = async (userId, options) => {
   return await prisma.user.findUnique({ where: { id: userId }, ...options });
 };
 
+const updateProfile = async (userId, data) => {
+  return await prisma.user.update({ where: { id: userId }, data });
+};
+
 export default {
   createUser,
   findUserByEmail,
@@ -59,4 +63,5 @@ export default {
   revokeAllSessions,
   revokeOtherSessions,
   findUserById,
+  updateProfile,
 };

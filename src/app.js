@@ -11,7 +11,6 @@ import setupSocket from "./socket/index.js";
 import { FRONTEND_URL } from "./constants/env.js";
 import redis, { pubClient, subClient } from "./config/redis.js";
 import { createAdapter } from "@socket.io/redis-adapter";
-import prisma from "./config/prisma.js";
 
 dotenv.config();
 

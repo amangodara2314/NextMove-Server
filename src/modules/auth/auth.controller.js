@@ -82,4 +82,18 @@ const googleAuth = async (req, res) => {
   successResponse(res, 201, { accessToken, user }, "Registered successfully");
 };
 
-export default { register, login, refreshToken, getMe, googleAuth };
+const updateProfile = async (req, res) => {
+  const userId = req.user.userId;
+  const data = req.body;
+  const result = await authService.updateProfile(userId, data);
+  successResponse(res, 200, result, "Data Found");
+};
+
+export default {
+  register,
+  login,
+  refreshToken,
+  getMe,
+  googleAuth,
+  updateProfile,
+};

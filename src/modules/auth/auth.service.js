@@ -231,4 +231,18 @@ const googleAuth = async (data) => {
   });
 };
 
-export default { register, login, refreshToken, getMe, googleAuth };
+const updateProfile = async (userId, data) => {
+  if (data.password) {
+    delete data.password;
+  }
+  return await authRepository.updateProfile(userId, data);
+};
+
+export default {
+  register,
+  login,
+  refreshToken,
+  getMe,
+  googleAuth,
+  updateProfile,
+};
