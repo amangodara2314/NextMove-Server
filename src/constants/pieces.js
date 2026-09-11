@@ -1,4 +1,4 @@
-import { PieceType } from "@prisma/client";
+import { PieceType } from "../../../prisma/generated/client.ts";
 
 const PIECE_MAP = {
   p: PieceType.PAWN,
