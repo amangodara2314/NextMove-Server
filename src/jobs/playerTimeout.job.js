@@ -2,7 +2,7 @@ import {
   GameResult,
   GameStatus,
   PlayerColor,
-} from "../../../prisma/generated/client.ts";
+} from "../../prisma/generated/client.ts";
 import gameRepository from "../modules/game/game.repository.js";
 import calculatePlayerTime from "../utils/calculatePlayerTime.js";
 import { notify } from "../utils/notifier.js";

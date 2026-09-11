@@ -1,4 +1,3 @@
-import { io } from "../app.js";
 import redis from "../config/redis.js";
 import { REDIS_KEYS } from "../constants/keys.js";
 import { notify } from "../utils/notifier.js";
