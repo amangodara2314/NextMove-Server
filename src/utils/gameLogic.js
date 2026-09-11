@@ -1,5 +1,9 @@
 import { Chess } from "chess.js";
-import { PlayerColor, GameStatus, GameResult } from "@prisma/client";
+import {
+  PlayerColor,
+  GameStatus,
+  GameResult,
+} from "../../prisma/generated/client.ts";
 import calculatePlayerTime from "./calculatePlayerTime.js";
 import { generateMovePayload, isPromotion } from "./move.js";
 import AppError from "./AppError.js";

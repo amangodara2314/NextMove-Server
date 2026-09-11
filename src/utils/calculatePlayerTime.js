@@ -1,4 +1,4 @@
-import { PlayerColor } from "@prisma/client";
+import { PlayerColor } from "../../prisma/generated/client.ts";
 
 const calculatePlayerTime = (game, playerColor, now = Date.now()) => {
   const lastMoveAt =

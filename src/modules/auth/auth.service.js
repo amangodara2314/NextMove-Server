@@ -1,5 +1,4 @@
-import { RatingType } from "@prisma/client";
-import prisma from "../../config/prisma.js";
+import { RatingType } from "../../../prisma/generated/client.ts";
 import {
   ACCESS_TOKEN_EXPIRES_IN,
   REFRESH_TOKEN_EXPIRES_IN,

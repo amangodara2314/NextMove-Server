@@ -1,11 +1,14 @@
-import { GameResult, GameStatus, PlayerColor } from "@prisma/client";
+import {
+  GameResult,
+  GameStatus,
+  PlayerColor,
+} from "../../../prisma/generated/client.ts";
 import gameRepository from "../modules/game/game.repository.js";
 import calculatePlayerTime from "../utils/calculatePlayerTime.js";
 import { notify } from "../utils/notifier.js";
 import { REDIS_KEYS } from "../constants/keys.js";
 import acquireLock from "../utils/acquireLock.js";
 import releaseLock from "../utils/releaseLock.js";
-import redis from "../config/redis.js";
 
 const handlePlayerTimeoutJob = async (job) => {
   const { gameId, turn } = job.data;

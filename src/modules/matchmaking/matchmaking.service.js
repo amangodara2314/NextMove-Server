@@ -14,7 +14,6 @@ import {
 import { io } from "../../app.js";
 import reservationTimeoutQueue from "../../queues/reservationTimeout.queue.js";
 import { v4 as uuidv4 } from "uuid";
-import { TimeControl } from "@prisma/client";
 import { getTimeControl } from "../../constants/timeControl.js";
 import { getRatingType } from "../../constants/game.js";
 

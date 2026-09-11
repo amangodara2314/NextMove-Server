@@ -1,4 +1,4 @@
-import { TimeControl } from "@prisma/client";
+import { TimeControl } from "../../../prisma/generated/client.ts";
 import { z } from "zod";
 
 const matchmakingSchema = z.object({

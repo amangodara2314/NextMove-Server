@@ -1,4 +1,4 @@
-import { GameStatus } from "@prisma/client";
+import { GameStatus } from "../../../prisma/generated/client.ts";
 import { REDIS_KEYS } from "../constants/keys.js";
 import redis from "../config/redis.js";
 import { io } from "../app.js";

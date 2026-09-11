@@ -1,5 +1,3 @@
-import { TimeControl } from "@prisma/client";
-
 const getTimeControl = () => {
   return {
     types: ["BULLET", "BLITZ", "RAPID"],

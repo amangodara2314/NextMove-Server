@@ -1,18 +1,5 @@
-import { Chess } from "chess.js";
-import redis from "../../config/redis.js";
-import { REDIS_KEYS } from "../../constants/keys.js";
-import moveQueue from "../../queues/move.queue.js";
-import acquireLock from "../../utils/acquireLock.js";
-import releaseLock from "../../utils/releaseLock.js";
-import PIECE_MAP from "../../constants/pieces.js";
-import { GameResult, GameStatus, PlayerColor } from "@prisma/client";
-import { prepareDateForDb } from "../../utils/prepareDateForDb.js";
-import gameRepository from "../../modules/game/game.repository.js";
 import createMove from "../validations/move.validation.js";
 import { io } from "../../app.js";
-import calculatePlayerTime from "../../utils/calculatePlayerTime.js";
-import playerTimeoutQueue from "../../queues/playerTimeoutQueue.js";
-import { generateMovePayload, isPromotion } from "../../utils/move.js";
 import gameService from "../../modules/game/game.service.js";
 
 const handleMoveEvents = async (socket) => {

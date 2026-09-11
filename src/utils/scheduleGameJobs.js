@@ -1,4 +1,4 @@
-import { GameStatus, PlayerColor } from "@prisma/client";
+import { GameStatus, PlayerColor } from "../../prisma/generated/client.ts";
 import moveQueue from "../queues/move.queue.js";
 import playerTimeoutQueue from "../queues/playerTimeoutQueue.js";
 
