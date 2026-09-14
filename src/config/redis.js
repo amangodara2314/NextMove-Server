@@ -4,23 +4,28 @@ const connectionString = process.env.REDIS_URL;
 
 const baseOptions = {
   host: process.env.REDIS_HOST,
-  port: Number(process.env.REDIS_PORT),
+  port: process.env.REDIS_PORT ? Number(process.env.REDIS_PORT) : undefined,
   username: "default",
   password: process.env.REDIS_PASSWORD,
 };
 
-const redis = new Redis({
-  ...baseOptions,
+const commonOptions = {
   maxRetriesPerRequest: null,
   enableReadyCheck: false,
   retryStrategy(times) {
     return Math.min(times * 200, 5000); // backoff, cap at 5s
   },
-});
+};
+
+const redis = connectionString
+  ? new Redis(connectionString, commonOptions)
+  : new Redis({ ...baseOptions, ...commonOptions });
 
 // Redis pub/sub configuration
 
-const pubClient = new Redis(baseOptions);
+const pubClient = connectionString
+  ? new Redis(connectionString)
+  : new Redis(baseOptions);
 const subClient = pubClient.duplicate();
 
 redis.on("connect", () => {

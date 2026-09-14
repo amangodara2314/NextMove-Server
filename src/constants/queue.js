@@ -1,5 +1,3 @@
-import Redis from "ioredis";
-import connection from "../config/redis.js";
 import redis from "../config/redis.js";
 
 const queueOptions = {
