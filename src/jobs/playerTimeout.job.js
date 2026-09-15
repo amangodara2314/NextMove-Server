@@ -67,6 +67,11 @@ const handlePlayerTimeoutJob = async (job) => {
       winner,
     );
 
+    console.log(
+      `Game ${gameId} ended due to player timeout. Winner: ${winner}`,
+    );
+    console.log("Updated game state:", updatedGame);
+
     notify({
       event: "PLAYER_TIMEOUT",
       room: gameId,

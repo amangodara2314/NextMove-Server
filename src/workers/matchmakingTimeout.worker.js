@@ -4,7 +4,12 @@ import redis from "../config/redis.js";
 
 const matchmakingTimeoutWorker = new Worker(
   "matchmaking-timeout",
-  handleMatchmakingTimeoutJob,
+  (job) => {
+    console.log(
+      `Processing matchmaking timeout job for user ${job.data.userId}`,
+    );
+    return handleMatchmakingTimeoutJob(job);
+  },
   {
     concurrency: 5,
     connection: redis,

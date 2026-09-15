@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "nodemon src/server.js",
+    "workers:dev": "nodemon src/workers/index.js",
     "prod": "node src/server.js",
     "workers": "node src/workers/index.js"
   },

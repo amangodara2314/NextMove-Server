@@ -35,6 +35,7 @@ const reconnectionTimeoutJob = async (job) => {
   }
 
   const userColor = game.white === userId ? "WHITE" : "BLACK";
+  const result = userColor === "WHITE" ? "BLACK" : "WHITE";
 
   const isConnected =
     userColor === "WHITE" ? game?.whiteConnected : game?.blackConnected;
@@ -48,10 +49,10 @@ const reconnectionTimeoutJob = async (job) => {
     `User ${userId} has not reconnected within the timeout. Handling disconnection for game ${gameId}.`,
   );
 
-  await gameRepository.finishGame(
+  const updated = await gameRepository.finishGame(
     game,
     GameStatus.ABORTED,
-    userColor,
+    result,
     userColor,
   );
 
@@ -61,6 +62,7 @@ const reconnectionTimeoutJob = async (job) => {
     payload: {
       message: `Game is aborted by ${userColor.toLocaleLowerCase()}`,
       abortedBy: userColor,
+      updatedGame: updated,
     },
   });
 

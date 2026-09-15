@@ -1,4 +1,3 @@
-import redis from "../config/redis.js";
 import authenticateSocket from "../middlewares/socketAuth.middleware.js";
 import handleSocketConnection from "./handlers/connection.handler.js";
 import handleMoveEvents from "./handlers/move.handler.js";
@@ -6,7 +5,6 @@ import handleGameEvents from "./handlers/game.handler.js";
 import handleReservationAck from "./handlers/reservation.handler.js";
 import eventGuard from "./middlewares/eventGuard.js";
 import rateLimitSocket from "./middlewares/rateLimit.js";
-import rateLimit from "./middlewares/rateLimit.js";
 import handleMatchmakingEvents from "./handlers/matchmaking.handler.js";
 
 const setupSocket = (io) => {

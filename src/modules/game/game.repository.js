@@ -197,6 +197,9 @@ const finishGame = async (game, status, result, abortedBy) => {
     redis.del(REDIS_KEYS.userActiveGame(game.white)),
     redis.del(REDIS_KEYS.userActiveGame(game.black)),
   ]);
+  console.log(
+    `Game ${gameId} finished with status ${status} and result ${updated}`,
+  );
   return updated;
 };
 

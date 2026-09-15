@@ -147,6 +147,12 @@ const newGame = async (userId, timeControl) => {
     return { matchFound: true, reservationId };
   }
   // add the userId to matchmaking-timeout queue to notify user if no opponent is available
+  console.log(
+    `No opponent found for user ${userId} for timeControl ${timeControl}. Adding to matchmaking timeout queue. adding jobId: matchmaking-timeout-${userId} with delay: ${MATCHMAKING_TIMEOUT * 1000 + 2}ms`,
+  );
+
+  await matchmakingTimeoutQueue.remove(`matchmaking-timeout-${userId}`);
+
   await matchmakingTimeoutQueue.add(
     "matchmaking-timeout",
     { userId, timeControl },

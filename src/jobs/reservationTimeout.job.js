@@ -33,6 +33,9 @@ const handleReservationTimeoutJob = async (job) => {
     await notifyPlayer(reservation.player2);
   }
 
+  console.log(
+    `Reservation ${data.reservationId} expired. Notifying players and cleaning up.`,
+  );
   await redis.del(key);
 };
 
