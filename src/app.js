@@ -19,6 +19,8 @@ const app = express();
 const httpServer = createServer(app);
 const io = new Server(httpServer, {
   adapter: createAdapter(pubClient, subClient),
+  pingInterval: 25000,
+  pingTimeout: 60000,
   cors: {
     origin: FRONTEND_URL,
   },
