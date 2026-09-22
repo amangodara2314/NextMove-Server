@@ -13,5 +13,6 @@ gameRouter.get("/check-timeout/:gameId", gameController.checkPlayerTimeout);
 gameRouter.get("/:gameId", gameController.getGame);
 gameRouter.post("/offer-draw/:gameId", gameController.offerDraw);
 gameRouter.post("/accept-draw/:gameId", gameController.acceptDraw);
+gameRouter.put("/resign/:gameId", gameController.resignGame);
 
 export default gameRouter;

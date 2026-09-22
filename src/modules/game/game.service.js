@@ -475,6 +475,37 @@ const getUserGames = async (userId, cursor, take = 10) => {
   };
 };
 
+const resignGame = async (gameId, userId) => {
+  const lockKey = REDIS_KEYS.lock("game", gameId);
+  let acquired = null;
+  try {
+    acquired = await acquireLock(gameId, 10);
+    let game = await gameRepository.getRedisGame(gameId);
+    if (!game) {
+      throw new AppError("Game not found.");
+    }
+    if (game.status !== "ACTIVE") {
+      throw new AppError("Game has ended.");
+    }
+    const resignedBy = game.white === userId ? "WHITE" : "BLACK";
+    const winner = resignedBy === "WHITE" ? "BLACK" : "WHITE";
+
+    const updatedGame = await gameRepository.finishGame(
+      game,
+      GameStatus.FINISHED,
+      winner,
+    );
+
+    io.to(gameId).emit("DRAW_ACCEPTED", updatedGame); // for now i am using DRAW_ACCEPTED later i will merge the possible events in single event "UPDATE_GAME"
+
+    return updatedGame;
+  } finally {
+    if (acquired) {
+      await releaseLock(lockKey, acquired);
+    }
+  }
+};
+
 export default {
   getGame,
   getMoves,
@@ -485,4 +516,5 @@ export default {
   acceptDraw,
   getRecentGames,
   getUserGames,
+  resignGame,
 };

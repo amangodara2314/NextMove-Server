@@ -62,6 +62,14 @@ const getUserGames = async (req, res) => {
   return successResponse(res, 200, result, "User games found");
 };
 
+const resignGame = async (req, res) => {
+  const userId = req.user.userId;
+  const { gameId } = req.params.gameId;
+  if (!gameId) throw new AppError("gameId not founds");
+  const result = await gameService.resignGame(gameId, userId);
+  successResponse(res, 200, result, "Resigned Successfully");
+};
+
 export default {
   getGame,
   getMoves,
@@ -70,4 +78,5 @@ export default {
   acceptDraw,
   getRecentGames,
   getUserGames,
+  resignGame,
 };
