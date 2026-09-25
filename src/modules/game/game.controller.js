@@ -64,8 +64,8 @@ const getUserGames = async (req, res) => {
 
 const resignGame = async (req, res) => {
   const userId = req.user.userId;
-  const { gameId } = req.params.gameId;
-  if (!gameId) throw new AppError("gameId not founds");
+  const { gameId } = req.params;
+  if (!gameId) throw new AppError("gameId not found");
   const result = await gameService.resignGame(gameId, userId);
   successResponse(res, 200, result, "Resigned Successfully");
 };

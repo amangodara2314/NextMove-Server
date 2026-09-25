@@ -86,7 +86,6 @@ const makeMove = async (
 };
 
 const getGame = async (gameId, userId) => {
-  const key = REDIS_KEYS.game(gameId);
   // find the game in redis
   let game = await gameRepository.getRedisGame(gameId);
   // return the cached game
@@ -102,8 +101,7 @@ const getGame = async (gameId, userId) => {
 
     io.to(gameId).emit("PLAYER_RECONNECTED", {
       userId,
-      color: game.userColor,
-      message: `Player ${game.userColor.toLowerCase()} has reconnected`,
+      updatedConnectionState: updatedData,
     });
 
     return { game };
@@ -143,13 +141,12 @@ const getGame = async (gameId, userId) => {
 
   // if the game is active cache it
   if (dbGame.status === GameStatus.ACTIVE) {
+    await gameRepository.createRedisGame(gameId, dbGame, 60 * 60);
+    const updatedData = await updatePlayerConnection(userColor, gameId);
     io.to(gameId).emit("PLAYER_RECONNECTED", {
       userId,
-      color: userColor,
+      updatedConnectionState: updatedData,
     });
-
-    await gameRepository.createRedisGame(gameId, dbGame, 60 * 60);
-    await updatePlayerConnection(userColor, gameId);
   }
 
   // set userColor property for frontend
@@ -496,7 +493,7 @@ const resignGame = async (gameId, userId) => {
       winner,
     );
 
-    io.to(gameId).emit("DRAW_ACCEPTED", updatedGame); // for now i am using DRAW_ACCEPTED later i will merge the possible events in single event "UPDATE_GAME"
+    io.to(gameId).emit("RESIGN", updatedGame);
 
     return updatedGame;
   } finally {

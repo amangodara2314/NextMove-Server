@@ -164,6 +164,7 @@ enum CastleType {
 enum GameStatus {
   ACTIVE
   FINISHED
+  RESIGNED
   ABORTED
   DRAW
   TIMEOUT
