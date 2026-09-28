@@ -60,11 +60,11 @@ const makeMove = async (
     );
     let finishedGame = null;
     if (ending) {
-      finishedGame = await gameRepository.finishGame(
-        game,
-        ending.status,
-        ending.result,
-      );
+      finishedGame = await gameRepository.finishGame({
+        gameId: game.id,
+        status: ending.status,
+        result: ending.result,
+      });
       game = { ...game, ...finishedGame };
     }
 
@@ -269,7 +269,11 @@ const checkPlayerTimeout = async (gameId) => {
       // update the game status to TIMEOUT and set the winner
       const winner = game.whiteTimeLeft <= 0 ? "BLACK" : "WHITE";
       [game] = await Promise.all([
-        gameRepository.finishGame(game, GameStatus.TIMEOUT, winner),
+        gameRepository.finishGame({
+          gameId: game.id,
+          status: GameStatus.TIMEOUT,
+          result: winner,
+        }),
         gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
       ]);
 
@@ -373,7 +377,11 @@ const acceptDraw = async (gameId, userId) => {
     }
 
     const [updatedGame] = await Promise.all([
-      gameRepository.finishGame(game, GameStatus.DRAW, "DRAW"),
+      gameRepository.finishGame({
+        gameId: game.id,
+        status: GameStatus.DRAW,
+        result: "DRAW",
+      }),
       gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
       redis.del(drawOfferKey),
       playerTimeoutQueue.remove(`clock_${gameId}`),
@@ -487,11 +495,11 @@ const resignGame = async (gameId, userId) => {
     const resignedBy = game.white === userId ? "WHITE" : "BLACK";
     const winner = resignedBy === "WHITE" ? "BLACK" : "WHITE";
 
-    const updatedGame = await gameRepository.finishGame(
-      game,
-      GameStatus.FINISHED,
-      winner,
-    );
+    const updatedGame = await gameRepository.finishGame({
+      gameId: game.id,
+      status: GameStatus.FINISHED,
+      result: winner,
+    });
 
     io.to(gameId).emit("RESIGN", updatedGame);
 

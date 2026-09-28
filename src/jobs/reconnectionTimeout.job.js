@@ -49,12 +49,12 @@ const reconnectionTimeoutJob = async (job) => {
     `User ${userId} has not reconnected within the timeout. Handling disconnection for game ${gameId}.`,
   );
 
-  const updated = await gameRepository.finishGame(
-    game,
-    GameStatus.ABORTED,
+  const updated = await gameRepository.finishGame({
+    gameId,
+    status: GameStatus.ABORTED,
     result,
-    userColor,
-  );
+    abortedBy: userColor,
+  });
 
   notify({
     room: gameId,

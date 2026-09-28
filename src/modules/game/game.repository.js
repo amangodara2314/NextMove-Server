@@ -105,8 +105,8 @@ const persistMove = async (gameId, move, game) => {
     .exec();
 };
 
-const finishGame = async (game, status, result, abortedBy) => {
-  const gameId = game.id;
+const finishGame = async ({ gameId, status, result, abortedBy }) => {
+  if (!gameId) throw new Error("gameId is required");
   const updated = await prisma.$transaction(async (tx) => {
     const dbGame = await tx.game.findUnique({
       where: {
@@ -116,9 +116,15 @@ const finishGame = async (game, status, result, abortedBy) => {
         whiteRatingBefore: true,
         blackRatingBefore: true,
         ratingApplied: true,
+        timeControl: true,
+        white: true,
+        black: true,
+        lastMoveAt: true,
+        turn: true,
+        whiteTimeLeft: true,
+        blackTimeLeft: true,
       },
     });
-
     if (!dbGame) {
       throw new Error("Game not found");
     }
@@ -139,14 +145,14 @@ const finishGame = async (game, status, result, abortedBy) => {
 
     const blackChange = ratings.blackRating - blackRatingBefore;
 
-    const ratingType = getRatingType(game.timeControl);
+    const ratingType = getRatingType(dbGame.timeControl);
     const isDraw = result === "DRAW";
     const isWhiteWinner = result === "WHITE";
 
     const whiteRating = await tx.userRating.update({
       where: {
         userId_type: {
-          userId: game.white,
+          userId: dbGame.white,
           type: ratingType,
         },
       },
@@ -162,7 +168,7 @@ const finishGame = async (game, status, result, abortedBy) => {
     const blackRating = await tx.userRating.update({
       where: {
         userId_type: {
-          userId: game.black,
+          userId: dbGame.black,
           type: ratingType,
         },
       },
@@ -185,17 +191,17 @@ const finishGame = async (game, status, result, abortedBy) => {
         blackRatingAfter: ratings.blackRating,
         whiteRatingChange: whiteChange,
         blackRatingChange: blackChange,
-        turn: game.turn,
-        whiteTimeLeft: parseInt(game.whiteTimeLeft),
-        blackTimeLeft: parseInt(game.blackTimeLeft),
-        lastMoveAt: game.lastMoveAt || null,
+        turn: dbGame.turn,
+        whiteTimeLeft: parseInt(dbGame.whiteTimeLeft),
+        blackTimeLeft: parseInt(dbGame.blackTimeLeft),
+        lastMoveAt: dbGame.lastMoveAt || null,
         ratingApplied: true,
       },
     });
   });
   await Promise.all([
-    redis.del(REDIS_KEYS.userActiveGame(game.white)),
-    redis.del(REDIS_KEYS.userActiveGame(game.black)),
+    redis.del(REDIS_KEYS.userActiveGame(dbGame.white)),
+    redis.del(REDIS_KEYS.userActiveGame(dbGame.black)),
   ]);
   console.log(
     `Game ${gameId} finished with status ${status} and result ${updated}`,

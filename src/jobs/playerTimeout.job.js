@@ -61,11 +61,12 @@ const handlePlayerTimeoutJob = async (job) => {
     const winner =
       turn === PlayerColor.WHITE ? GameResult.BLACK : GameResult.WHITE;
 
-    const updatedGame = await gameRepository.finishGame(
-      game,
-      GameStatus.TIMEOUT,
-      winner,
-    );
+    const updatedGame = await gameRepository.finishGame({
+      gameId,
+      status: GameStatus.TIMEOUT,
+      result: winner,
+      abortedBy: turn,
+    });
 
     console.log(
       `Game ${gameId} ended due to player timeout. Winner: ${winner}`,
