@@ -50,6 +50,7 @@ export type CastleType = (typeof CastleType)[keyof typeof CastleType]
 export const GameStatus = {
   ACTIVE: 'ACTIVE',
   FINISHED: 'FINISHED',
+  RESIGNED: 'RESIGNED',
   ABORTED: 'ABORTED',
   DRAW: 'DRAW',
   TIMEOUT: 'TIMEOUT'

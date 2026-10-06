@@ -129,8 +129,12 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
       throw new Error("Game not found");
     }
 
+    if (dbGame.status !== "ACTIVE" && dbGame.ratingApplied) {
+      return dbGame;
+    }
+
     if (dbGame.ratingApplied) {
-      return game;
+      return dbGame;
     }
 
     const { whiteRatingBefore, blackRatingBefore } = dbGame;
@@ -181,6 +185,17 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
       },
     });
 
+    await updateRedisGame(gameId, {
+      whiteRatingAfter: ratings.whiteRating,
+      blackRatingAfter: ratings.blackRating,
+      whiteRatingChange: whiteChange,
+      blackRatingChange: blackChange,
+      ratingApplied: true,
+      status,
+      result,
+      abortedBy,
+    });
+
     return await tx.game.update({
       where: { id: gameId },
       data: {
@@ -197,11 +212,26 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
         lastMoveAt: dbGame.lastMoveAt || null,
         ratingApplied: true,
       },
+      select: {
+        id: true,
+        status: true,
+        result: true,
+        abortedBy: true,
+        whiteRatingAfter: true,
+        blackRatingAfter: true,
+        whiteRatingChange: true,
+        blackRatingChange: true,
+        whiteTimeLeft: true,
+        blackTimeLeft: true,
+        lastMoveAt: true,
+        white: true,
+        black: true,
+      },
     });
   });
   await Promise.all([
-    redis.del(REDIS_KEYS.userActiveGame(dbGame.white)),
-    redis.del(REDIS_KEYS.userActiveGame(dbGame.black)),
+    redis.del(REDIS_KEYS.userActiveGame(updated.white)),
+    redis.del(REDIS_KEYS.userActiveGame(updated.black)),
   ]);
   console.log(
     `Game ${gameId} finished with status ${status} and result ${updated}`,

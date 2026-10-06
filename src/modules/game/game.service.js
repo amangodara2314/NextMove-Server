@@ -35,11 +35,12 @@ const makeMove = async (
     let game = await getActiveGame(gameId);
     gameLogic.assertVersionMatches(game, version);
 
-    const { chess, moveResult } = gameLogic.validateChessMove(game.fen, {
+    const { chess, moveResult } = gameLogic.validateChessMove(game.currentFen, {
       from,
       to,
       promotion,
     });
+
     const move = gameLogic.applyMoveToGameState(
       game,
       chess,
@@ -268,7 +269,7 @@ const checkPlayerTimeout = async (gameId) => {
       }
       // update the game status to TIMEOUT and set the winner
       const winner = game.whiteTimeLeft <= 0 ? "BLACK" : "WHITE";
-      [game] = await Promise.all([
+      [updatedGame] = await Promise.all([
         gameRepository.finishGame({
           gameId: game.id,
           status: GameStatus.TIMEOUT,
@@ -276,6 +277,8 @@ const checkPlayerTimeout = async (gameId) => {
         }),
         gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
       ]);
+
+      game = { ...game, ...updatedGame };
 
       // clean up redis keys
     } catch (error) {
@@ -494,14 +497,15 @@ const resignGame = async (gameId, userId) => {
     }
     const resignedBy = game.white === userId ? "WHITE" : "BLACK";
     const winner = resignedBy === "WHITE" ? "BLACK" : "WHITE";
+    const resignedByUser = resignedBy === "WHITE" ? game.white : game.black;
 
     const updatedGame = await gameRepository.finishGame({
       gameId: game.id,
-      status: GameStatus.FINISHED,
+      status: GameStatus.RESIGNED,
       result: winner,
     });
 
-    io.to(gameId).emit("RESIGN", updatedGame);
+    io.to(gameId).emit("RESIGN", { updatedGame, resignedByUser });
 
     return updatedGame;
   } finally {

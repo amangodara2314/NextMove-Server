@@ -48,7 +48,7 @@ const applyMoveToGameState = (
     timestamp,
   );
 
-  game.fen = chess.fen();
+  game.currentFen = chess.fen();
   game.version += 1;
   game.turn = moveResult.color === "w" ? PlayerColor.BLACK : PlayerColor.WHITE;
 
@@ -77,15 +77,15 @@ const determineGameEnd = (game, move, chess, moverColor) => {
 const buildResponse = (game, move) => {
   const response = {
     move,
-    fen: game.fen,
+    currentFen: game.currentFen,
     version: game.version,
     whiteTimeLeft: game.whiteTimeLeft,
     blackTimeLeft: game.blackTimeLeft,
+    turn: game.turn,
   };
   if (game.status !== GameStatus.ACTIVE) {
-    response.gameOver = true;
-    response.gameStatus = game.status;
-    response.gameResult = game.result;
+    response.status = game.status;
+    response.result = game.result;
     response.whiteRatingAfter = game.whiteRatingAfter;
     response.blackRatingAfter = game.blackRatingAfter;
     response.whiteRatingChange = game.whiteRatingChange;
