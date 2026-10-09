@@ -105,8 +105,19 @@ const persistMove = async (gameId, move, game) => {
     .exec();
 };
 
-const finishGame = async ({ gameId, status, result, abortedBy }) => {
+const finishGame = async ({
+  gameId,
+  status,
+  result,
+  abortedBy,
+  whiteTimeLeft,
+  blackTimeLeft,
+}) => {
   if (!gameId) throw new Error("gameId is required");
+
+  console.log(
+    `updating game with player time left: ${whiteTimeLeft} ${blackTimeLeft}`,
+  );
   const updated = await prisma.$transaction(async (tx) => {
     const dbGame = await tx.game.findUnique({
       where: {
@@ -123,6 +134,7 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
         turn: true,
         whiteTimeLeft: true,
         blackTimeLeft: true,
+        result: true,
       },
     });
     if (!dbGame) {
@@ -153,7 +165,7 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
     const isDraw = result === "DRAW";
     const isWhiteWinner = result === "WHITE";
 
-    const whiteRating = await tx.userRating.update({
+    await tx.userRating.update({
       where: {
         userId_type: {
           userId: dbGame.white,
@@ -169,7 +181,7 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
       },
     });
 
-    const blackRating = await tx.userRating.update({
+    await tx.userRating.update({
       where: {
         userId_type: {
           userId: dbGame.black,
@@ -207,8 +219,10 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
         whiteRatingChange: whiteChange,
         blackRatingChange: blackChange,
         turn: dbGame.turn,
-        whiteTimeLeft: parseInt(dbGame.whiteTimeLeft),
-        blackTimeLeft: parseInt(dbGame.blackTimeLeft),
+        whiteTimeLeft:
+          parseInt(whiteTimeLeft) || parseInt(dbGame.whiteTimeLeft),
+        blackTimeLeft:
+          parseInt(blackTimeLeft) || parseInt(dbGame.blackTimeLeft),
         lastMoveAt: dbGame.lastMoveAt || null,
         ratingApplied: true,
       },
@@ -233,9 +247,7 @@ const finishGame = async ({ gameId, status, result, abortedBy }) => {
     redis.del(REDIS_KEYS.userActiveGame(updated.white)),
     redis.del(REDIS_KEYS.userActiveGame(updated.black)),
   ]);
-  console.log(
-    `Game ${gameId} finished with status ${status} and result ${updated}`,
-  );
+  console.log(`Game ${gameId} finished with status ${status}`);
   return updated;
 };
 

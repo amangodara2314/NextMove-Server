@@ -256,6 +256,7 @@ const checkPlayerTimeout = async (gameId) => {
   console.log(
     `Checking player timeout for game ${gameId}: White time left: ${game.whiteTimeLeft}, Black time left: ${game.blackTimeLeft}`,
   );
+  let updatedGame;
   if (Number(game.whiteTimeLeft) <= 0 || Number(game.blackTimeLeft) <= 0) {
     let lockKey = REDIS_KEYS.lock("game", gameId);
     let acquiredLock;
@@ -269,16 +270,13 @@ const checkPlayerTimeout = async (gameId) => {
       }
       // update the game status to TIMEOUT and set the winner
       const winner = game.whiteTimeLeft <= 0 ? "BLACK" : "WHITE";
-      [updatedGame] = await Promise.all([
-        gameRepository.finishGame({
-          gameId: game.id,
-          status: GameStatus.TIMEOUT,
-          result: winner,
-        }),
-        gameRepository.cleanUpRedisKeys(gameId, game.white, game.black),
-      ]);
-
-      game = { ...game, ...updatedGame };
+      updatedGame = await gameRepository.finishGame({
+        gameId: game.id,
+        status: GameStatus.TIMEOUT,
+        result: winner,
+        whiteTimeLeft: game.whiteTimeLeft,
+        blackTimeLeft: game.blackTimeLeft,
+      });
 
       // clean up redis keys
     } catch (error) {
@@ -293,12 +291,20 @@ const checkPlayerTimeout = async (gameId) => {
       }
     }
 
-    io.to(gameId).emit("PLAYER_TIMEOUT", game);
+    io.to(gameId).emit("PLAYER_TIMEOUT", {
+      status: updatedGame.status,
+      result: updatedGame.result,
+      whiteTimeLeft: updatedGame.whiteTimeLeft,
+      blackTimeLeft: updatedGame.blackTimeLeft,
+    });
   }
-  console.log(
-    `Player timeout check completed for game ${gameId}: Status: ${game.status}, Winner: ${game.winner}`,
-  );
-  return { status: game.status, winner: game.winner || null };
+
+  return {
+    status: updatedGame.status,
+    result: updatedGame.result,
+    whiteTimeLeft: updatedGame.whiteTimeLeft,
+    blackTimeLeft: updatedGame.blackTimeLeft,
+  };
 };
 
 const offerDraw = async (gameId, userId) => {

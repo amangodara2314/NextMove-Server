@@ -65,7 +65,8 @@ const handlePlayerTimeoutJob = async (job) => {
       gameId,
       status: GameStatus.TIMEOUT,
       result: winner,
-      abortedBy: turn,
+      whiteTimeLeft: game.whiteTimeLeft,
+      blackTimeLeft: game.blackTimeLeft,
     });
 
     console.log(
@@ -78,11 +79,6 @@ const handlePlayerTimeoutJob = async (job) => {
       room: gameId,
       payload: updatedGame,
     });
-
-    console.log("Cleaning up Redis keys for game", gameId);
-
-    // redis cleanup
-    await gameRepository.cleanUpRedisKeys(gameId, game.white, game.black);
 
     console.log(
       `Game ${gameId} ended due to player timeout. Winner: ${winner}`,
