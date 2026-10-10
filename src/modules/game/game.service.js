@@ -257,6 +257,7 @@ const checkPlayerTimeout = async (gameId) => {
     `Checking player timeout for game ${gameId}: White time left: ${game.whiteTimeLeft}, Black time left: ${game.blackTimeLeft}`,
   );
   let updatedGame;
+  let response = {};
   if (Number(game.whiteTimeLeft) <= 0 || Number(game.blackTimeLeft) <= 0) {
     let lockKey = REDIS_KEYS.lock("game", gameId);
     let acquiredLock;
@@ -277,8 +278,6 @@ const checkPlayerTimeout = async (gameId) => {
         whiteTimeLeft: game.whiteTimeLeft,
         blackTimeLeft: game.blackTimeLeft,
       });
-
-      // clean up redis keys
     } catch (error) {
       console.error(
         `Error while handling player timeout for game ${gameId}:`,
@@ -291,20 +290,21 @@ const checkPlayerTimeout = async (gameId) => {
       }
     }
 
-    io.to(gameId).emit("PLAYER_TIMEOUT", {
+    response = {
       status: updatedGame.status,
       result: updatedGame.result,
       whiteTimeLeft: updatedGame.whiteTimeLeft,
       blackTimeLeft: updatedGame.blackTimeLeft,
-    });
+      whiteRatingChange: updatedGame.whiteRatingChange,
+      whiteRatingAfter: updatedGame.whiteRatingAfter,
+      blackRatingChange: updatedGame.blackRatingChange,
+      blackRatingAfter: updatedGame.blackRatingAfter,
+    };
+
+    io.to(gameId).emit("PLAYER_TIMEOUT", response);
   }
 
-  return {
-    status: updatedGame.status,
-    result: updatedGame.result,
-    whiteTimeLeft: updatedGame.whiteTimeLeft,
-    blackTimeLeft: updatedGame.blackTimeLeft,
-  };
+  return response;
 };
 
 const offerDraw = async (gameId, userId) => {

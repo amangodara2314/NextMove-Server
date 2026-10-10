@@ -74,10 +74,21 @@ const handlePlayerTimeoutJob = async (job) => {
     );
     console.log("Updated game state:", updatedGame);
 
+    const payload = {
+      status: updatedGame.status,
+      result: updatedGame.result,
+      whiteTimeLeft: updatedGame.whiteTimeLeft,
+      blackTimeLeft: updatedGame.blackTimeLeft,
+      whiteRatingChange: updatedGame.whiteRatingChange,
+      whiteRatingAfter: updatedGame.whiteRatingAfter,
+      blackRatingChange: updatedGame.blackRatingChange,
+      blackRatingAfter: updatedGame.blackRatingAfter,
+    };
+
     notify({
       event: "PLAYER_TIMEOUT",
       room: gameId,
-      payload: updatedGame,
+      payload,
     });
 
     console.log(

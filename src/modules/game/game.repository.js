@@ -127,6 +127,7 @@ const finishGame = async ({
         whiteRatingBefore: true,
         blackRatingBefore: true,
         ratingApplied: true,
+        status: true,
         timeControl: true,
         white: true,
         black: true,
@@ -139,10 +140,6 @@ const finishGame = async ({
     });
     if (!dbGame) {
       throw new Error("Game not found");
-    }
-
-    if (dbGame.status !== "ACTIVE" && dbGame.ratingApplied) {
-      return dbGame;
     }
 
     if (dbGame.ratingApplied) {
@@ -219,10 +216,8 @@ const finishGame = async ({
         whiteRatingChange: whiteChange,
         blackRatingChange: blackChange,
         turn: dbGame.turn,
-        whiteTimeLeft:
-          parseInt(whiteTimeLeft) || parseInt(dbGame.whiteTimeLeft),
-        blackTimeLeft:
-          parseInt(blackTimeLeft) || parseInt(dbGame.blackTimeLeft),
+        whiteTimeLeft: parseInt(whiteTimeLeft) || 0,
+        blackTimeLeft: parseInt(blackTimeLeft) || 0,
         lastMoveAt: dbGame.lastMoveAt || null,
         ratingApplied: true,
       },
